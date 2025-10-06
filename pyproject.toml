@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zte-daemon"
+version = "0.1.0"
+description = "Mocked hello-world CLI for the ZTE MC888 Ultra daemon"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1",
+    "gmqtt>=0.6",
+    "anyio>=4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-ra"
+
+[project.scripts]
+zte = "zte_daemon.cli.main:cli"
