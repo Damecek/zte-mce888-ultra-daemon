@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-10-06T10:00:00Z",
+  "signal": {
+    "rsrp": -85,
+    "sinr": 20
+  },
+  "provider": "Telekom",
+  "hardware": {
+    "model": "MC888 Ultra",
+    "firmware": "V1.0.0"
+  },
+  "network": {
+    "ipv4": "192.168.0.1",
+    "connection_state": "connected"
+  }
+}

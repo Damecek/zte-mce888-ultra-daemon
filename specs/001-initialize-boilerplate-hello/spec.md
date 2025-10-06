@@ -5,6 +5,13 @@
 **Status**: Draft  
 **Input**: User description: "initialize boilerplate hello world for this project. stack: Python stable, uv, gmqtt, standard logging, click. Test driven development with Modem api mocking. Human will provide responses based curl requests on real device"
 
+## Clarifications
+
+### Session 2025-10-06
+- Q: Which CLI command naming should the spec lock in for the hello-world experience? → A: Use `zte run` for the daemon and `zte read <metric>` for interactive reads.
+- Q: For the canonical `zte run` hello-world invocation, which runtime environment should the spec treat as the default expectation? → A: Run entirely with mocked modem and MQTT; sample addresses are placeholders.
+
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### Primary User Story
@@ -24,12 +31,12 @@ As a daemon developer, I need a ready-to-run hello-world baseline that reflects 
 ### Functional Requirements
 - **FR-001**: The system MUST expose a clearly documented command-line entrypoint that showcases the daemon's hello-world interaction for developers and operators.
 - **FR-002**: The hello-world execution MUST produce structured logs using the project's standard logging conventions so stakeholders can confirm observability wiring.
-- **FR-003**: The baseline MUST attempt an MQTT greeting flow aligned with future modem messaging, including graceful handling when no broker is reachable.
+- **FR-003**: The baseline MUST simulate the modem MQTT greeting flow using mocked endpoints so the hello-world run succeeds without live broker connectivity while retaining graceful handling instructions for future real integration.
 - **FR-004**: The boilerplate MUST include an automated test suite that demonstrates test-driven development patterns for modem interactions via a mocked API surface.
 - **FR-005**: The solution MUST illustrate how human-captured modem responses (e.g., via curl against a real device) can be incorporated into tests without blocking automated runs.
 - **FR-006**: Documentation MUST guide developers through installing prerequisites, running the hello-world CLI, executing tests, and understanding how the mock modem components map to real hardware expectations.
-- **FR-007**: The team MUST confirm alignment on the expected CLI command name and invocation pattern [NEEDS CLARIFICATION: preferred command naming convention not provided].
-- **FR-008**: The team MUST clarify whether the initial hello-world MQTT handshake should use a live broker, a stub broker, or remain purely illustrative [NEEDS CLARIFICATION: target broker environment unspecified].
+- **FR-007**: The CLI MUST standardize on `zte run` for daemon execution and `zte read <metric>` for interactive queries, aligning documentation, help output, and tests with this command structure.
+- **FR-008**: Documentation MUST state that the provided MQTT host, topic, and credentials are illustrative placeholders because the hello-world run relies on mocked messaging rather than a live broker.
 
 ### Key Entities *(include if feature involves data)*
 - **Developer Session**: Represents the person running the hello-world CLI, needing guidance on environment setup, logging expectations, and next steps.

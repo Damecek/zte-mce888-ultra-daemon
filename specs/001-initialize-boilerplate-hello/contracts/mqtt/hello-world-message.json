@@ -1,0 +1,21 @@
+{
+  "$schema": "https://zte.local/schemas/mqtt/zte-modem/v0.1.0-mock.json",
+  "schema_version": "0.1.0-mock",
+  "device_id": "zte-mc888u-local",
+  "status": "mock",
+  "metrics": {
+    "rsrp": {
+      "value": -85,
+      "unit": "dBm"
+    },
+    "provider": {
+      "value": "Telekom",
+      "unit": null
+    },
+    "captured_at": "2025-10-06T10:00:00Z"
+  },
+  "meta": {
+    "source": "mock-fixture",
+    "notes": "Hello-world payload only; no live publish occurs."
+  }
+}
