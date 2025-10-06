@@ -22,21 +22,18 @@ Follow-up TODOs: None
 **Non-Negotiables**
 - HTTP interactions with the modem MUST target private network addresses only (default `http://192.169.0.1`) and refuse reconfiguration to public endpoints without a recorded risk assessment.
 - MQTT publishing MUST default to local broker credentials, with authentication and TLS options documented and enabled whenever the broker supports them.
-- The service MUST detect and log any connection attempts outside the permitted local ranges and stop publishing until configuration is corrected.
 **Rationale**: Constraining traffic to the local network prevents accidental data exposure and keeps the deployment aligned with the homeowner's security posture.
 
 ### Deterministic MQTT Publishing
 **Non-Negotiables**
 - Topic naming, payload schemas, and measurement units MUST be versioned, documented, and treated as contracts; breaking changes require a published migration note before release.
-- MQTT messages MUST embed timestamps and a stable modem identifier to guarantee idempotency and traceability for subscribers.
-- The publish loop MUST verify that modem data is fresh; stale reads trigger a health status message instead of silently replaying obsolete values.
+- The publish loop MUST work only with fresh data.
 **Rationale**: Deterministic messaging keeps downstream automations correct and simplifies troubleshooting.
 
 ### Markdown Evidence Trail
 **Non-Negotiables**
 - Markdown documentation MUST cover the modem attribute catalog, MQTT topic map, CLI usage, configuration recipes, and deployment guidance.
 - Any change to telemetry acquisition, schemas, or CLI behavior MUST update the relevant Markdown files within the same change set.
-- Documentation MUST include operator checklists to validate data accuracy against the modem's native interface.
 **Rationale**: Persistent, accurate documentation enables safe operation and handover without institutional memory loss.
 
 ### Operable CLI-First Service
