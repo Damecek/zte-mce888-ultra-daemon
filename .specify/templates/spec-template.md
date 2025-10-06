@@ -11,13 +11,17 @@
    → If empty: ERROR "No feature description provided"
 2. Extract key concepts from description
    → Identify: actors, actions, data, constraints
+   → Map modem telemetry attributes and MQTT delivery expectations tied to the feature
+   → Capture local network topology assumptions (modem, daemon host, broker)
 3. For each unclear aspect:
    → Mark with [NEEDS CLARIFICATION: specific question]
+   → Flag missing telemetry attribute definitions or undocumented MQTT topics
 4. Fill User Scenarios & Testing section
    → If no clear user flow: ERROR "Cannot determine user scenarios"
 5. Generate Functional Requirements
    → Each requirement must be testable
    → Mark ambiguous requirements
+   → Include documentation deliverables (Markdown updates, schema revisions) triggered by the feature
 6. Identify Key Entities (if data involved)
 7. Run Review Checklist
    → If any [NEEDS CLARIFICATION]: WARN "Spec has uncertainties"
@@ -99,6 +103,7 @@ When creating this spec from a user prompt:
 - [ ] Success criteria are measurable
 - [ ] Scope is clearly bounded
 - [ ] Dependencies and assumptions identified
+- [ ] Telemetry coverage, MQTT schema impact, documentation updates, and CLI/operational implications are explicitly addressed
 
 ---
 

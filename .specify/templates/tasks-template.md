@@ -9,26 +9,27 @@
    → If not found: ERROR "No implementation plan found"
    → Extract: tech stack, libraries, structure
 2. Load optional design documents:
-   → data-model.md: Extract entities → model tasks
-   → contracts/: Each file → contract test task
+   → data-model.md: Extract telemetry/catalog entries → polling tasks
+   → contracts/: Each file → modem or MQTT contract test task
    → research.md: Extract decisions → setup tasks
 3. Generate tasks by category:
    → Setup: project init, dependencies, linting
-   → Tests: contract tests, integration tests
-   → Core: models, services, CLI commands
-   → Integration: DB, middleware, logging
-   → Polish: unit tests, performance, docs
+   → Telemetry: modem HTTP contracts, polling loops
+   → MQTT Messaging: topic schemas, publisher logic
+   → CLI & Operations: commands, diagnostics, service wiring
+   → Documentation: Markdown updates, runbooks, schema notes
+   → Validation: integration tests, observability, release checks
 4. Apply task rules:
    → Different files = mark [P] for parallel
    → Same file = sequential (no [P])
-   → Tests before implementation (TDD)
+   → Tests before implementation (TDD) and include modem/MQTT diagnostics
 5. Number tasks sequentially (T001, T002...)
 6. Generate dependency graph
 7. Create parallel execution examples
 8. Validate task completeness:
-   → All contracts have tests?
-   → All entities have models?
-   → All endpoints implemented?
+   → All modem REST contracts have tests?
+   → All telemetry attributes and MQTT topics have implementation coverage?
+   → All required documentation and CLI/operations deliverables captured?
 9. Return: SUCCESS (tasks ready for execution)
 ```
 
@@ -43,57 +44,58 @@
 - Paths shown below assume single project - adjust based on plan.md structure
 
 ## Phase 3.1: Setup
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+- [ ] T001 Create project structure per implementation plan (e.g., `src/telemetry`, `src/mqtt`, `src/cli`, `docs/`)
+- [ ] T002 Initialize runtime environment and dependency management
+- [ ] T003 [P] Configure linting, formatting, and CI entrypoints for Linux target
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
-- [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
-- [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
-- [ ] T006 [P] Integration test user registration in tests/integration/test_registration.py
-- [ ] T007 [P] Integration test auth flow in tests/integration/test_auth.py
+- [ ] T004 [P] Contract test modem REST attribute fetch in `tests/contract/test_modem_attributes.py`
+- [ ] T005 [P] Contract test modem session handling and authentication renewal in `tests/contract/test_modem_session.py`
+- [ ] T006 [P] MQTT payload schema test in `tests/contract/test_mqtt_payloads.py`
+- [ ] T007 [P] Integration test polling-to-publish loop in `tests/integration/test_poll_to_mqtt.py`
+- [ ] T008 Integration test CLI diagnostics command in `tests/integration/test_cli_status.py`
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
-- [ ] T008 [P] User model in src/models/user.py
-- [ ] T009 [P] UserService CRUD in src/services/user_service.py
-- [ ] T010 [P] CLI --create-user in src/cli/user_commands.py
-- [ ] T011 POST /api/users endpoint
-- [ ] T012 GET /api/users/{id} endpoint
-- [ ] T013 Input validation
-- [ ] T014 Error handling and logging
+- [ ] T009 [P] Implement modem attribute poller in `src/telemetry/zte_mc888.py`
+- [ ] T010 [P] Build MQTT publisher with deterministic topic map in `src/mqtt/publisher.py`
+- [ ] T011 Wire telemetry-to-MQTT pipeline scheduler in `src/pipeline/dispatcher.py`
+- [ ] T012 Implement CLI command group in `src/cli/main.py`
+- [ ] T013 Add configuration loader and validation in `src/config/loader.py`
+- [ ] T014 Implement structured logging and health signaling in `src/observability/logger.py`
 
 ## Phase 3.4: Integration
-- [ ] T015 Connect UserService to DB
-- [ ] T016 Auth middleware
-- [ ] T017 Request/response logging
-- [ ] T018 CORS and security headers
+- [ ] T015 Wire CLI diagnostics to runtime status endpoints
+- [ ] T016 Validate local network constraints and block disallowed endpoints
+- [ ] T017 Exercise MQTT connectivity against local broker (publish/subscribe loopback)
+- [ ] T018 Capture modem credential management (secure storage, refresh cadence)
 
 ## Phase 3.5: Polish
-- [ ] T019 [P] Unit tests for validation in tests/unit/test_validation.py
-- [ ] T020 Performance tests (<200ms)
-- [ ] T021 [P] Update docs/api.md
-- [ ] T022 Remove duplication
-- [ ] T023 Run manual-testing.md
+- [ ] T019 [P] Unit tests for configuration edge cases in `tests/unit/test_config_validation.py`
+- [ ] T020 Performance tests for polling cadence and publish latency budgets
+- [ ] T021 [P] Update Markdown docs (`docs/attributes.md`, `docs/mqtt.md`, `docs/cli.md`)
+- [ ] T022 Produce operator runbook (`docs/operations.md`) with validation checklist
+- [ ] T023 Run manual verification script and capture sample MQTT payloads
 
 ## Dependencies
-- Tests (T004-T007) before implementation (T008-T014)
-- T008 blocks T009, T015
-- T016 blocks T018
-- Implementation before polish (T019-T023)
+- Contract and integration tests (T004-T008) precede implementation tasks (T009-T014)
+- Telemetry poller (T009) must land before pipeline wiring (T011) and network enforcement (T016)
+- Configuration loader (T013) blocks diagnostics and validation tasks (T015-T020)
+- Documentation and runbooks (T021-T022) depend on finalized schemas and CLI outputs
 
 ## Parallel Example
 ```
-# Launch T004-T007 together:
-Task: "Contract test POST /api/users in tests/contract/test_users_post.py"
-Task: "Contract test GET /api/users/{id} in tests/contract/test_users_get.py"
-Task: "Integration test registration in tests/integration/test_registration.py"
-Task: "Integration test auth in tests/integration/test_auth.py"
+# Launch contract-focused tasks together (different files):
+Task: "Contract test modem REST attribute fetch in tests/contract/test_modem_attributes.py"
+Task: "Contract test modem session handling in tests/contract/test_modem_session.py"
+Task: "MQTT payload schema test in tests/contract/test_mqtt_payloads.py"
+Task: "Integration test CLI diagnostics command in tests/integration/test_cli_status.py"
 ```
 
 ## Notes
 - [P] tasks = different files, no dependencies
 - Verify tests fail before implementing
+- Attach documentation updates alongside code
 - Commit after each task
 - Avoid: vague tasks, same file conflicts
 
@@ -101,27 +103,27 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 *Applied during main() execution*
 
 1. **From Contracts**:
-   - Each contract file → contract test task [P]
-   - Each endpoint → implementation task
+   - Each modem REST contract file → contract test task [P]
+   - Each MQTT schema definition → payload validation and publisher task
    
-2. **From Data Model**:
-   - Each entity → model creation task [P]
-   - Relationships → service layer tasks
+2. **From Telemetry Catalog**:
+   - Each attribute or measurement → polling implementation task [P]
+   - Derived metrics or status messages → pipeline aggregation tasks
    
-3. **From User Stories**:
-   - Each story → integration test [P]
-   - Quickstart scenarios → validation tasks
+3. **From CLI & Operations Stories**:
+   - Each CLI requirement → command implementation and help text update
+   - Each operational scenario → diagnostics test or runbook task
 
 4. **Ordering**:
-   - Setup → Tests → Models → Services → Endpoints → Polish
+   - Setup → Tests → Telemetry → MQTT → CLI & Config → Documentation/Validation
    - Dependencies block parallel execution
 
 ## Validation Checklist
 *GATE: Checked by main() before returning*
 
-- [ ] All contracts have corresponding tests
-- [ ] All entities have model tasks
+- [ ] All modem REST contracts have corresponding test tasks
+- [ ] All telemetry attributes and MQTT topics have implementation coverage
+- [ ] Documentation and runbook updates are scheduled
 - [ ] All tests come before implementation
-- [ ] Parallel tasks truly independent
-- [ ] Each task specifies exact file path
-- [ ] No task modifies same file as another [P] task
+- [ ] Parallel tasks are independent and specify exact file paths
+- [ ] No task modifies the same file as another [P] task

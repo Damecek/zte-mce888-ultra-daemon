@@ -1,50 +1,67 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version change: N/A → 1.0.0
+Modified principles: [PRINCIPLE_1_NAME] → End-to-End Modem Telemetry; [PRINCIPLE_2_NAME] → Local-Only Secure Communications; [PRINCIPLE_3_NAME] → Deterministic MQTT Publishing; [PRINCIPLE_4_NAME] → Markdown Evidence Trail; [PRINCIPLE_5_NAME] → Operable CLI-First Service
+Added sections: Operational Constraints & Interfaces; Development Workflow & Quality Gates
+Removed sections: None
+Templates requiring updates: ✅ .specify/templates/plan-template.md; ✅ .specify/templates/spec-template.md; ✅ .specify/templates/tasks-template.md
+Follow-up TODOs: None
+-->
+# ZTE MC888 Ultra MQTT Daemon Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### End-to-End Modem Telemetry
+**Non-Negotiables**
+- The daemon MUST enumerate and fetch every publicly exposed attribute from the ZTE MC888 Ultra REST interface, capturing data value, units, and freshness metadata.
+- Any unsupported attribute MUST be logged in a telemetry backlog and documented with its API path, expected type, and integration status.
+- Polling workflows MUST fail gracefully with bounded retries and deliver the last known good data to prevent blind spots for downstream consumers.
+**Rationale**: Smart home systems require a complete, dependable mirror of the modem state; gaps undermine automation and alerting.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### Local-Only Secure Communications
+**Non-Negotiables**
+- HTTP interactions with the modem MUST target private network addresses only (default `http://192.169.0.1`) and refuse reconfiguration to public endpoints without a recorded risk assessment.
+- MQTT publishing MUST default to local broker credentials, with authentication and TLS options documented and enabled whenever the broker supports them.
+- The service MUST detect and log any connection attempts outside the permitted local ranges and stop publishing until configuration is corrected.
+**Rationale**: Constraining traffic to the local network prevents accidental data exposure and keeps the deployment aligned with the homeowner's security posture.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### Deterministic MQTT Publishing
+**Non-Negotiables**
+- Topic naming, payload schemas, and measurement units MUST be versioned, documented, and treated as contracts; breaking changes require a published migration note before release.
+- MQTT messages MUST embed timestamps and a stable modem identifier to guarantee idempotency and traceability for subscribers.
+- The publish loop MUST verify that modem data is fresh; stale reads trigger a health status message instead of silently replaying obsolete values.
+**Rationale**: Deterministic messaging keeps downstream automations correct and simplifies troubleshooting.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### Markdown Evidence Trail
+**Non-Negotiables**
+- Markdown documentation MUST cover the modem attribute catalog, MQTT topic map, CLI usage, configuration recipes, and deployment guidance.
+- Any change to telemetry acquisition, schemas, or CLI behavior MUST update the relevant Markdown files within the same change set.
+- Documentation MUST include operator checklists to validate data accuracy against the modem's native interface.
+**Rationale**: Persistent, accurate documentation enables safe operation and handover without institutional memory loss.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### Operable CLI-First Service
+**Non-Negotiables**
+- Provide a Linux-ready executable and CLI that expose configuration flags for modem endpoint, polling cadence, MQTT connection details, and runtime modes (daemon, dry-run, diagnostics).
+- The CLI MUST surface status commands to report modem connectivity, last publish timestamp, and broker handshake health.
+- Exit codes and logging MUST distinguish configuration errors, connectivity faults, and runtime failures so that automation can react deterministically.
+**Rationale**: A robust operational surface keeps the service manageable in unattended home server environments.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Operational Constraints & Interfaces
+- Modem integration uses the ZTE MC888 Ultra HTTP REST interface; requests leverage authenticated local sessions and MUST avoid disrupting the modem's native UI.
+- MQTT communication targets a broker reachable on the local network; topic namespaces follow the documented schema version and include per-attribute subtopics.
+- Configuration files and CLI flags MUST default to the canonical topology: modem at `192.169.0.1`, daemon on a Linux host, and broker on a distinct local address.
+- Network transports MUST avoid cloud dependencies; any optional remote telemetry exports require an explicit opt-in feature proposal and governance review.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow & Quality Gates
+- Follow test-driven development for schema and CLI changes: write contract tests for REST responses and MQTT payloads before implementation.
+- Every pull request MUST attach evidence of documentation updates, sample MQTT messages, and connectivity test results against a local environment (real modem or emulator).
+- Automated checks MUST validate schema versions, lint documentation for missing attribute entries, and ensure CLI help output matches documented options.
+- Release candidates MUST pass integration tests covering modem polling, MQTT publish/subscribe round-trips, and CLI diagnostics commands on a Linux target.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+- This constitution defines mandatory practices for the ZTE MC888 Ultra MQTT Daemon; conflicting processes are superseded unless amended here.
+- Amendments require consensus from project maintainers, a documented rationale, updated compliance checks, and simultaneous version/tag updates referencing the change.
+- Versioning follows semantic versioning: MAJOR for breaking governance changes, MINOR for new principles or material expansions, PATCH for clarifications.
+- Compliance reviews occur before every tagged release and quarterly thereafter; unresolved findings block release until rectified or explicitly deferred with owner and due date recorded.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2025-10-06 | **Last Amended**: 2025-10-06

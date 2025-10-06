@@ -47,7 +47,11 @@
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- **Telemetry completeness**: Plan documents how the feature discovers or updates full modem attribute coverage and records any gaps with mitigation steps.
+- **Local network enforcement**: Proposed changes keep all modem and MQTT traffic on approved private addresses or provide a reviewed justification for exceptions.
+- **Deterministic messaging**: Design preserves MQTT topic/schema contracts, describes schema version impact, and schedules migration tasks when needed.
+- **Documentation parity**: Plan lists the Markdown updates required for attribute catalog, MQTT map, CLI usage, and operator playbooks.
+- **Operational surface**: CLI and service changes include diagnostics pathways, exit codes, and Linux deployment considerations aligned with the constitution.
 
 ## Project Structure
 
@@ -216,4 +220,4 @@ directories captured above]
 - [ ] Complexity deviations documented
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*Based on Constitution v1.0.0 - See `/memory/constitution.md`*
