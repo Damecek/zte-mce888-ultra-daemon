@@ -16,6 +16,15 @@ __all__ = [
 
 
 def _as_int(value: Any) -> int | None:
+    """
+    Convert a value to an integer when possible.
+    
+    Parameters:
+        value (Any): Value to convert; converted to a string then parsed as an integer.
+    
+    Returns:
+        int | None: The parsed integer if conversion succeeds, `None` if the value cannot be converted.
+    """
     try:
         return int(str(value))
     except (TypeError, ValueError):
@@ -23,6 +32,15 @@ def _as_int(value: Any) -> int | None:
 
 
 def _split_numbers(values: Iterable[Any]) -> list[int]:
+    """
+    Collect integer-convertible items from an iterable.
+    
+    Parameters:
+        values (Iterable[Any]): Values to attempt to convert to integers.
+    
+    Returns:
+        list[int]: Integers parsed from `values` in their original order; items that cannot be converted are omitted.
+    """
     result: list[int] = []
     for raw in values:
         val = _as_int(raw)
@@ -81,9 +99,23 @@ class MetricSnapshot:
 
     @property
     def rsrp1(self) -> int | None:
+        """
+        Return the first LTE RSRP measurement if available.
+        
+        Returns:
+            int: First value from `lte.rsrp` if the list is non-empty, `None` otherwise.
+        """
         return self.lte.rsrp[0] if self.lte.rsrp else None
 
     def metric_map(self) -> dict[str, Any]:
+        """
+        Builds a flat mapping of key metrics from the snapshot.
+        
+        The returned dictionary contains top-level fields ("provider", "bands", "wan_ip"), indexed LTE signal entries ("rsrp1", "rsrp2", ... and "sinr1", "sinr2", ...), NR5G summary fields ("nr5g_rsrp" — the first NR5G RSRP if present, otherwise None; "nr5g_sinr"), and a temperature tuple under the key "temp (A/M/P)" representing (antenna, modem, power amplifier).
+        
+        Returns:
+            dict[str, Any]: A mapping from metric name to its current value.
+        """
         mapping: dict[str, Any] = {
             "provider": self.provider,
             "bands": self.bands,
@@ -103,6 +135,18 @@ class MetricSnapshot:
         return mapping
 
     def value_for(self, metric: str) -> Any:
+        """
+        Retrieve a metric value by name from the snapshot's metric map.
+        
+        Parameters:
+        	metric (str): Metric name to look up; lookup is case-insensitive.
+        
+        Returns:
+        	The value associated with the given metric name from the snapshot's metric map.
+        
+        Raises:
+        	KeyError: If the metric name is not present in the metric map.
+        """
         normalized = metric.lower()
         data = self.metric_map()
         if normalized in data:
@@ -111,6 +155,24 @@ class MetricSnapshot:
 
     @classmethod
     def from_payload(cls, host: str, payload: Mapping[str, Any]) -> "MetricSnapshot":
+        """
+        Constructs a MetricSnapshot from a raw payload mapping and a host identifier.
+        
+        Parses common fields and nested metric groups from the provided payload:
+        - Sets the snapshot timestamp to the current UTC time.
+        - Extracts provider name, active bands, WAN IP, connection type, and cell id.
+        - Builds LteMetrics by collecting LTE RSRP and SNR values from keys `lte_rsrp_1`..`lte_rsrp_4` and `lte_snr_1`..`lte_snr_4`, and reading optional LTE fields (`lte_rsrq`, `lte_rssi`, `lte_ca_pcell_freq`, `lte_pci`, `lte_ca_pcell_bandwidth`).
+        - Builds Nr5GMetrics by collecting 5G RSRP values from `5g_rx0_rsrp` and `5g_rx1_rsrp`, and reading optional NR5G fields (`Z5g_SINR`, `nr5g_action_channel`, `nr5g_pci`, `nr_ca_pcell_bandwidth`).
+        - Constructs TemperatureReadings from `pm_sensor_ambient`, `pm_sensor_mdm`, and `pm_sensor_pa1`.
+        - Parses neighbors from `ngbr_cell_info`, expecting semicolon-separated entries where each entry is a comma-separated list with identifier, optional rsrp, and optional rsrq.
+        
+        Parameters:
+            host (str): Host identifier associated with the payload.
+            payload (Mapping[str, Any]): Raw telemetry mapping containing metric fields.
+        
+        Returns:
+            MetricSnapshot: A populated MetricSnapshot instance reflecting parsed values from the payload.
+        """
         timestamp = datetime.now(UTC)
         provider = str(payload.get("network_provider_fullname", "unknown"))
         bands = payload.get("wan_active_band")

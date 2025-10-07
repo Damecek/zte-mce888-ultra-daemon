@@ -10,10 +10,21 @@ from zte_daemon.cli.main import cli
 
 @pytest.fixture()
 def runner() -> CliRunner:
+    """
+    Provide a fresh Click CliRunner instance for tests.
+    
+    Returns:
+        CliRunner: A new CliRunner for invoking CLI commands and capturing output in tests.
+    """
     return CliRunner()
 
 
 def test_discover_requires_host(runner: CliRunner) -> None:
+    """
+    Ensure the CLI 'discover' command fails when the required --host option is omitted.
+    
+    Invokes the CLI with discover, --password, and --path but without --host, then asserts the process exits with a non-zero code and that the output suggests the missing `--host` option.
+    """
     result = runner.invoke(
         cli,
         [

@@ -22,6 +22,21 @@ from zte_daemon.modem.metrics import (
 
 @pytest.fixture()
 def snapshot() -> MetricSnapshot:
+    """
+    Provide a deterministic MetricSnapshot instance populated with representative test data.
+    
+    The snapshot has a UTC timestamp of 2025-10-06T12:00:00, host "192.168.0.1", provider "TestNet", ENDC connection and example LTE/NR5G metrics, temperatures, and one neighbor cell.
+    
+    Returns:
+        MetricSnapshot: A ready-to-use test snapshot with:
+            - host: "192.168.0.1"
+            - provider: "TestNet"
+            - timestamp: 2025-10-06T12:00:00+00:00
+            - temperatures.antenna: 32
+            - lte.rsrp: [-95, -97]
+            - nr5g.rsrp: [-88]
+            - neighbors[0].identifier: "cell-1"
+    """
     return MetricSnapshot(
         timestamp=datetime(2025, 10, 6, 12, 0, tzinfo=timezone.utc),
         host="192.168.0.1",

@@ -14,6 +14,14 @@ from zte_daemon.modem.zte_client import RequestError
 
 class SnapshotStub:
     def __init__(self) -> None:
+        """
+        Create a fixed snapshot object used for testing with preset timestamp, RSRP, and provider.
+        
+        Attributes:
+            timestamp (datetime): Timestamp set to 2025-10-06T10:00:00Z.
+            rsrp1 (int): Reference signal received power value set to -85.
+            provider (str): Provider identifier set to "TestNet".
+        """
         self.timestamp = datetime(2025, 10, 6, 10, 0, tzinfo=timezone.utc)
         self.rsrp1 = -85
         self.provider = "TestNet"
@@ -21,29 +29,86 @@ class SnapshotStub:
 
 class ClientStub:
     def __enter__(self) -> "ClientStub":
+        """
+        Enter the context manager and provide this client instance for use within the with-block.
+        
+        Returns:
+            ClientStub: The same client instance (`self`) to be used inside the context.
+        """
         return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:
+        """
+        Indicates the context manager does not suppress exceptions raised inside the with-block.
+        
+        @returns
+            False if any exception raised inside the context should be propagated (not suppressed).
+        """
         return False
 
     def login(self, password: str) -> bool:
+        """
+        Simulates a successful device login using the provided password.
+        
+        Parameters:
+            password (str): Device password (ignored by this stub).
+        
+        Returns:
+            `true` if the login is accepted.
+        """
         return True
 
     def fetch_snapshot(self) -> SnapshotStub:
+        """
+        Return a fixed test snapshot representing modem metrics.
+        
+        The returned SnapshotStub contains preconfigured attributes used in tests: `timestamp`, `rsrp1` (signal strength), and `provider`.
+        
+        Returns:
+            SnapshotStub: A stubbed snapshot with preset `timestamp`, `rsrp1`, and `provider` values.
+        """
         return SnapshotStub()
 
 
 class NetworkErrorClient:
     def __enter__(self) -> "NetworkErrorClient":
+        """
+        Enter the context and provide the NetworkErrorClient instance for use with a `with` statement.
+        
+        Returns:
+            NetworkErrorClient: The client instance (`self`) to be used as the context manager.
+        """
         return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:
+        """
+        Indicates the context manager does not suppress exceptions raised inside the with-block.
+        
+        @returns
+            False if any exception raised inside the context should be propagated (not suppressed).
+        """
         return False
 
     def login(self, password: str) -> bool:
+        """
+        Simulates a successful device login using the provided password.
+        
+        Parameters:
+            password (str): Device password (ignored by this stub).
+        
+        Returns:
+            `true` if the login is accepted.
+        """
         return True
 
     def fetch_snapshot(self) -> SnapshotStub:
+        """
+        Simulate fetching a snapshot but always raise a network error.
+        
+        Raises:
+            RequestError: Indicates the modem is unreachable; raised with an underlying
+            `httpx.ConnectError` describing the connection failure.
+        """
         raise RequestError("network unreachable") from httpx.ConnectError(
             "boom",
             request=httpx.Request("GET", httpx.URL("http://modem")),
@@ -52,6 +117,12 @@ class NetworkErrorClient:
 
 @pytest.fixture()
 def runner() -> CliRunner:
+    """
+    Provide a Click CliRunner instance for testing command-line interfaces.
+    
+    Returns:
+        CliRunner: A CliRunner instance used to invoke CLI commands in tests.
+    """
     return CliRunner()
 
 
@@ -104,12 +175,22 @@ def test_run_command_reports_snapshot_and_records_publish(
 
 
 def test_run_command_requires_device_password(runner: CliRunner) -> None:
+    """
+    Verifies that the 'run' CLI command fails when no device password is provided.
+    
+    Asserts the command exits with a non-zero status and the output mentions the required "--device-pass" option.
+    """
     result = runner.invoke(cli, ["run"], catch_exceptions=False)
     assert result.exit_code != 0
     assert "--device-pass" in result.output
 
 
 def test_run_reports_network_error(runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Verifies the CLI 'run' command reports an unreachable-modem error when the client cannot connect.
+    
+    Monkeypatches the command's ZTEClient to simulate a network failure, invokes the CLI with a device password, and asserts the process exits with a non-zero code and prints "Unable to reach modem".
+    """
     import importlib
 
     run_mod = importlib.import_module("zte_daemon.cli.commands.run")

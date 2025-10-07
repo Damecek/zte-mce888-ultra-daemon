@@ -15,6 +15,17 @@ from zte_daemon.modem.zte_client import ZTEClient
 
 class RecordingClient(ZTEClient):
     def __init__(self, host: str, recorder: dict[str, Any]) -> None:
+        """
+        Initialize a ZTEClient that records outgoing HTTP request details into `recorder`.
+        
+        Parameters:
+            host (str): Host address used to construct the client.
+            recorder (dict[str, Any]): Mutable mapping where the client will store captured request data:
+                - "method": HTTP method as a string.
+                - "headers": dict of request headers.
+                - "body": request body decoded to a string.
+        
+        """
         def handler(request: httpx.Request) -> httpx.Response:
             recorder["method"] = request.method
             recorder["headers"] = dict(request.headers)
@@ -25,12 +36,27 @@ class RecordingClient(ZTEClient):
         self._authenticated = True  # type: ignore[attr-defined]
 
     def login(self, password: str) -> bool:  # pragma: no cover - behaviour validated by contract tests
+        """
+        Mark the client as authenticated and indicate a successful login.
+        
+        Parameters:
+            password (str): Ignored by this test client; present to match the production API.
+        
+        Returns:
+            bool: `True` to indicate authentication was successful.
+        """
         self._authenticated = True  # type: ignore[attr-defined]
         return True
 
 
 @pytest.fixture()
 def runner() -> CliRunner:
+    """
+    Create a Click test runner for invoking CLI commands.
+    
+    Returns:
+        CliRunner: a new CliRunner instance for use in tests.
+    """
     return CliRunner()
 
 

@@ -10,6 +10,14 @@ def runner() -> CliRunner:
 
 
 def test_top_level_help_includes_commands(runner: CliRunner) -> None:
+    """
+    Verify the top-level CLI help shows the expected usage line, version option, and listed commands.
+    
+    Asserts that the help output includes:
+    - the common usage line for the CLI,
+    - the version option description,
+    - the "discover", "read", and "run" command entries with their expected short descriptions.
+    """
     result = runner.invoke(cli, ["--help"])
     assert result.exit_code == 0
     output = result.output
