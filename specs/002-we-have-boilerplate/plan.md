@@ -1,8 +1,8 @@
 
-# Implementation Plan: ZTE Modem REST Metrics & Discover CLI
+# Implementation Plan: [FEATURE]
 
-**Branch**: `002-we-have-boilerplate` | **Date**: 2025-10-06 | **Spec**: /Users/adam/IdeaProjects/zte-mc888-ultra-deamon/specs/002-we-have-boilerplate/spec.md
-**Input**: Feature specification from `/specs/002-we-have-boilerplate/spec.md`
+**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
@@ -17,7 +17,7 @@
    → If no justification possible: ERROR "Simplify approach first"
    → Update Progress Tracking: Initial Constitution Check
 5. Execute Phase 0 → research.md
-   → Resolve NEEDS CLARIFICATION via Clarifications and `js_implementation.js`
+   → If NEEDS CLARIFICATION remain: ERROR "Resolve unknowns"
 6. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, `GEMINI.md` for Gemini CLI, `QWEN.md` for Qwen Code, or `AGENTS.md` for all other agents).
 7. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
@@ -31,18 +31,18 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-Implement a local CLI that authenticates to a ZTE MC888 modem using the frontend-compatible REST flow (see `js_implementation.js`), retrieves modem metrics, and provides a generic `zte discover` subcommand to fetch arbitrary endpoints with `--path`, `--payload`, `--method`, and `--target-file`. Follow TDD with mocked HTTP interactions and maintain Markdown example inputs/outputs under `docs/discover`. Replace and remove prior hello-world scaffolding in favor of the real solution.
+[Extract from feature spec: primary requirement + technical approach from research]
 
 ## Technical Context
-**Language/Version**: Python 3.12 (uv-managed)
-**Primary Dependencies**: Click (CLI), logging; HTTP client [NEEDS CLARIFICATION: requests vs httpx]
-**Storage**: Markdown examples in `docs/discover`; in-memory snapshots
-**Testing**: pytest; HTTP interactions mocked per discover examples
-**Target Platform**: Linux server / local workstation
-**Project Type**: single
-**Performance Goals**: [NEEDS CLARIFICATION]
-**Constraints**: Local-network only; remove hello-world scaffolding; logs not redacted (user responsibility)
-**Scale/Scope**: Single modem, single host; extensible endpoints
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [single/web/mobile - determines source structure]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
@@ -109,7 +109,8 @@ ios/ or android/
 └── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: Single-project structure using `src/` and `tests/` roots with subfolders as outlined above.
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
 ## Phase 0: Outline & Research
 1. **Extract unknowns from Technical Context** above:
@@ -205,17 +206,17 @@ ios/ or android/
 *This checklist is updated during execution flow*
 
 **Phase Status**:
-- [x] Phase 0: Research complete (/plan command)
-- [x] Phase 1: Design complete (/plan command)
-- [x] Phase 2: Task planning complete (/plan command - tasks.md created)
+- [ ] Phase 0: Research complete (/plan command)
+- [ ] Phase 1: Design complete (/plan command)
+- [ ] Phase 2: Task planning complete (/plan command - describe approach only)
 - [ ] Phase 3: Tasks generated (/tasks command)
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
-- [x] Initial Constitution Check: PASS
-- [x] Post-Design Constitution Check: PASS
-- [x] All NEEDS CLARIFICATION resolved
+- [ ] Initial Constitution Check: PASS
+- [ ] Post-Design Constitution Check: PASS
+- [ ] All NEEDS CLARIFICATION resolved
 - [ ] Complexity deviations documented
 
 ---
