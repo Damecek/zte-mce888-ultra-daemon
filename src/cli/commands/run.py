@@ -1,11 +1,11 @@
-"""Implementation of the `zte run` command."""
+"""Implementation of the `zte run` command (flattened src layout)."""
 from __future__ import annotations
 
 import click
 
-from zte_daemon.logging.config import configure_logging
-from zte_daemon.modem.mock_client import MockModemClient, ModemFixtureError
-from zte_daemon.mqtt.mock_broker import MockMQTTBroker
+from lib.logging_setup import configure_logging
+from services.modem_mock import MockModemClient, ModemFixtureError
+from services.mqtt_mock import MockMQTTBroker
 
 
 def _derive_device_id(device_host: str) -> str:
@@ -70,7 +70,7 @@ def run_command(
     mqtt_password: str | None,
 ) -> dict[str, object]:
     """Run the ZTE modem daemon with mocked MQTT publish loop."""
-    del device_pass  # authentication not required for mock flow but accepted for contract compliance
+    del device_pass  # not required for mock flow
     logger = configure_logging(log_level, log_file)
     logger.info(
         "Starting mocked daemon run",

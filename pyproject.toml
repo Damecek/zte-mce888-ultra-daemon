@@ -26,4 +26,4 @@ pythonpath = ["src"]
 addopts = "-ra"
 
 [project.scripts]
-zte = "zte_daemon.cli.main:cli"
+zte = "cli.zte:cli"

@@ -16,8 +16,8 @@ from services.zte_client import (
     TimeoutError,
     ZTEClient,
 )
-from zte_daemon.cli.commands.read import read_command
-from zte_daemon.cli.commands.run import run_command
+from cli.commands.read import read_command
+from cli.commands.run import run_command
 
 
 @click.group(name="zte", help="ZTE MC888 modem utilities")

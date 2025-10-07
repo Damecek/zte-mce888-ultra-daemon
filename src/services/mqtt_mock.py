@@ -1,4 +1,4 @@
-"""Mock MQTT broker for hello-world flows."""
+"""Mock MQTT broker for hello-world flows (flattened src layout)."""
 from __future__ import annotations
 
 import json
@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
-from zte_daemon.modem.mock_client import ModemSnapshot
+from services.modem_mock import ModemSnapshot
 
 _DEFAULT_LOG = Path("logs") / "mqtt-mock.jsonl"
 
@@ -78,3 +78,6 @@ class MockMQTTBroker:
 def get_last_record() -> PublishRecord | None:
     """Return the most recent publish record for test inspection."""
     return MockMQTTBroker.last_record
+
+__all__ = ["MockMQTTBroker", "PublishRecord", "get_last_record"]
+

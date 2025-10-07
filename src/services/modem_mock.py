@@ -1,4 +1,4 @@
-"""Mock modem client that loads captured fixtures."""
+"""Mock modem client that loads captured fixtures (flattened src layout)."""
 from __future__ import annotations
 
 import json
@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 _DEFAULT_FIXTURE = (
-    Path(__file__).resolve().parents[3]
+    Path(__file__).resolve().parents[2]
     / "tests"
     / "fixtures"
     / "modem"
@@ -93,3 +93,10 @@ class MockModemClient:
         if not self._snapshot:
             return self.load_snapshot()
         return self._snapshot
+
+__all__ = [
+    "MockModemClient",
+    "ModemSnapshot",
+    "ModemFixtureError",
+]
+

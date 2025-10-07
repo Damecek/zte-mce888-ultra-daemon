@@ -1,10 +1,10 @@
-"""Implementation of the `zte read` command."""
+"""Implementation of the `zte read` command (flattened src layout)."""
 from __future__ import annotations
 
 import click
 
-from zte_daemon.logging.config import configure_logging
-from zte_daemon.modem.mock_client import MockModemClient, ModemFixtureError
+from lib.logging_setup import configure_logging
+from services.modem_mock import MockModemClient, ModemFixtureError
 
 
 @click.command(
@@ -54,3 +54,4 @@ def read_command(metric: str, log_level: str, log_file: str | None) -> str:
     )
     click.echo(f"{display_key}: {value}")
     return display_key
+
