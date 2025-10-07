@@ -1,8 +1,9 @@
 """Utility helpers for persisting mocked HTTP snapshots."""
+
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +17,7 @@ def save_snapshot(
 ) -> Path:
     target_dir = Path(destination)
     target_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    timestamp = datetime.now(UTC).isoformat(timespec="seconds")
     target_path = target_dir / f"{timestamp}-{name}.json"
     payload = {
         "captured_at": timestamp,

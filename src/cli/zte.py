@@ -1,13 +1,15 @@
 """Click CLI exposing modem discovery utilities."""
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import click
 import httpx
 
+from cli.commands.read import read_command
+from cli.commands.run import run_command
 from lib import logging_setup, markdown_io, snapshots
 from services.zte_client import (
     AuthenticationError,
@@ -16,8 +18,6 @@ from services.zte_client import (
     TimeoutError,
     ZTEClient,
 )
-from cli.commands.read import read_command
-from cli.commands.run import run_command
 
 
 @click.group(name="zte", help="ZTE MC888 modem utilities")
@@ -37,14 +37,16 @@ def cli() -> None:
     type=click.Choice(["GET", "POST"], case_sensitive=False),
     help="Override HTTP method",
 )
-@click.option("--target-file", type=click.Path(path_type=Path), help="Write Markdown example to this file")
+@click.option(
+    "--target-file", type=click.Path(path_type=Path), help="Write Markdown example to this file"
+)
 def discover(
     host: str,
     password: str,
     path: str,
-    payload: Optional[str],
-    method: Optional[str],
-    target_file: Optional[Path],
+    payload: str | None,
+    method: str | None,
+    target_file: Path | None,
 ) -> None:
     effective_method = method.upper() if method else ("POST" if payload else "GET")
 

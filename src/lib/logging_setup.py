@@ -4,17 +4,18 @@ Adds a structured JSON logger compatible with the prior
 `zte_daemon.logging.config.configure_logging` API while preserving the
 simple `configure()` helper already used by the new code.
 """
+
 from __future__ import annotations
 
-import logging
 import json
+import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 _CONFIGURED = False
 
 
-def configure(level: int = logging.INFO, handler: Optional[logging.Handler] = None) -> None:
+def configure(level: int = logging.INFO, handler: logging.Handler | None = None) -> None:
     global _CONFIGURED
     if _CONFIGURED:
         return

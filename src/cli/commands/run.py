@@ -1,4 +1,5 @@
 """Implementation of the `zte run` command (flattened src layout)."""
+
 from __future__ import annotations
 
 import click
@@ -47,7 +48,9 @@ def _derive_device_id(device_host: str) -> str:
     type=click.Path(path_type=str),
     help="Optional log file destination (ensures parent dir exists).",
 )
-@click.option("mqtt_host", "--mqtt-host", help="Placeholder broker address (stored but not contacted).")
+@click.option(
+    "mqtt_host", "--mqtt-host", help="Placeholder broker address (stored but not contacted)."
+)
 @click.option(
     "mqtt_topic",
     "--mqtt-topic",

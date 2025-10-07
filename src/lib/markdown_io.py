@@ -1,4 +1,5 @@
 """Helpers for writing discovery Markdown artifacts."""
+
 from __future__ import annotations
 
 import json
@@ -32,14 +33,12 @@ def write_discover_example(
     target_path = Path(target_file)
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
-    request_block = _format_payload(
-        {
-            "host": host,
-            "path": path,
-            "method": method,
-            "payload": payload,
-        }
-    )
+    request_block = _format_payload({
+        "host": host,
+        "path": path,
+        "method": method,
+        "payload": payload,
+    })
 
     response_block = _format_response(response)
 

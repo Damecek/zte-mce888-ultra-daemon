@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 REQUIRED_SECTIONS = [
     "LTE Metrics",
     "NR5G Metrics",

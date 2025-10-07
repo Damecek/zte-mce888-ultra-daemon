@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from click.testing import CliRunner
 import pytest
+from click.testing import CliRunner
 
 from cli.zte import cli
 

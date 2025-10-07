@@ -1,7 +1,7 @@
-from click.testing import CliRunner
 import re
 
 import pytest
+from click.testing import CliRunner
 
 from cli.zte import cli
 

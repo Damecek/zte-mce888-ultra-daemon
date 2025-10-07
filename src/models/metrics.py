@@ -1,9 +1,9 @@
 """Data structures describing modem metric snapshots."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional
 
 
 @dataclass(slots=True)
@@ -55,11 +55,11 @@ class MetricSnapshot:
     nr5g: NR5GReadings
     provider: str
     cell: str
-    neighbors: List[NeighborCell] = field(default_factory=list)
+    neighbors: list[NeighborCell] = field(default_factory=list)
     connection: str = ""
     bands: str = ""
     wan_ip: str = ""
-    temp: Optional[TemperatureReadings] = None
+    temp: TemperatureReadings | None = None
 
 
 __all__ = [

@@ -4,8 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from ..fixtures import load_latest_snapshot
 from services.modem_mock import MockModemClient, ModemFixtureError
+
+from ..fixtures import load_latest_snapshot
 
 
 @pytest.fixture()

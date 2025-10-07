@@ -1,5 +1,3 @@
-from typing import Dict
-
 import httpx
 import pytest
 
@@ -8,7 +6,7 @@ from services import zte_client
 
 class RecordingTransport(httpx.BaseTransport):
     def __init__(self) -> None:
-        self.state: Dict[str, bool] = {"logged_in": False}
+        self.state: dict[str, bool] = {"logged_in": False}
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:  # type: ignore[override]
         if request.method == "GET" and request.url.path == "/goform/goform_get_cmd_process":
@@ -29,9 +27,7 @@ class RecordingTransport(httpx.BaseTransport):
                 "isTest": "false",
                 "goformId": "LOGIN",
                 "password": zte_client.sha256_hex(zte_client.sha256_hex("password") + "salt-LD"),
-                "AD": zte_client.sha256_hex(
-                    zte_client.sha256_hex("MC888-TESTV1.0.0") + "salt-RD"
-                ),
+                "AD": zte_client.sha256_hex(zte_client.sha256_hex("MC888-TESTV1.0.0") + "salt-RD"),
             }
             self.state["logged_in"] = True
             headers = {"Set-Cookie": "SESSIONID=abc123; Path=/; HttpOnly"}

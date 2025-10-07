@@ -1,4 +1,5 @@
 """Implementation of the `zte read` command (flattened src layout)."""
+
 from __future__ import annotations
 
 import click
@@ -12,7 +13,7 @@ from services.modem_mock import MockModemClient, ModemFixtureError
     help="""Read a modem metric from cached telemetry (e.g., RSRP, Provider).
 
 Arguments:
-  METRIC  Metric name (RSRP, Provider)"""
+  METRIC  Metric name (RSRP, Provider)""",
 )
 @click.argument("metric", metavar="METRIC")
 @click.option(
@@ -42,9 +43,7 @@ def read_command(metric: str, log_level: str, log_file: str | None) -> str:
     metric_map = snapshot.metric_map
     canonical = {key.upper(): key for key in metric_map}
     if normalized not in canonical:
-        raise click.ClickException(
-            "Unknown metric. Supported metrics: RSRP, Provider"
-        )
+        raise click.ClickException("Unknown metric. Supported metrics: RSRP, Provider")
 
     display_key = canonical[normalized]
     value = metric_map[display_key]
@@ -54,4 +53,3 @@ def read_command(metric: str, log_level: str, log_file: str | None) -> str:
     )
     click.echo(f"{display_key}: {value}")
     return display_key
-

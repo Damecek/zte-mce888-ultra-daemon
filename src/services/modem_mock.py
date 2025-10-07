@@ -1,18 +1,15 @@
 """Mock modem client that loads captured fixtures (flattened src layout)."""
+
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 _DEFAULT_FIXTURE = (
-    Path(__file__).resolve().parents[2]
-    / "tests"
-    / "fixtures"
-    / "modem"
-    / "latest.json"
+    Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "modem" / "latest.json"
 )
 
 
@@ -32,10 +29,10 @@ class ModemSnapshot:
     rsrp: int
     sinr: int
     provider: str
-    raw_payload: Dict[str, Any]
+    raw_payload: dict[str, Any]
 
     @property
-    def metric_map(self) -> Dict[str, Any]:
+    def metric_map(self) -> dict[str, Any]:
         return {
             "RSRP": self.rsrp,
             "Provider": self.provider,
@@ -94,9 +91,9 @@ class MockModemClient:
             return self.load_snapshot()
         return self._snapshot
 
+
 __all__ = [
     "MockModemClient",
     "ModemSnapshot",
     "ModemFixtureError",
 ]
-

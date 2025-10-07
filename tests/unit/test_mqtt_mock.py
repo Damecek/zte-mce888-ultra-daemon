@@ -5,8 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from ..fixtures import load_latest_snapshot
 from services.mqtt_mock import MockMQTTBroker
+
+from ..fixtures import load_latest_snapshot
 
 
 @pytest.fixture()

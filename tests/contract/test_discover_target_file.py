@@ -16,13 +16,17 @@ def test_discover_writes_target_markdown(monkeypatch, tmp_path):
         def login(self, password: str) -> None:
             calls["password"] = password
 
-        def request(self, path: str, method: str, payload: str | None = None, expects: str = "json"):
+        def request(
+            self, path: str, method: str, payload: str | None = None, expects: str = "json"
+        ):
             calls["path"] = path
             calls["method"] = method
             calls["payload"] = payload
             return {"data": [1, 2, 3]}
 
-    def fake_write(target_file: Path, host: str, path: str, method: str, payload: str | None, response):
+    def fake_write(
+        target_file: Path, host: str, path: str, method: str, payload: str | None, response
+    ):
         calls["target_file"] = Path(target_file)
         calls["markdown_host"] = host
         Path(target_file).write_text("# example\n")
