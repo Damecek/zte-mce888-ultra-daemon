@@ -17,7 +17,7 @@
    → If no justification possible: ERROR "Simplify approach first"
    → Update Progress Tracking: Initial Constitution Check
 5. Execute Phase 0 → research.md
-   → Resolve NEEDS CLARIFICATION items via spec Clarifications and `js_implementation.js`-driven procedures
+   → Resolve NEEDS CLARIFICATION via Clarifications and `js_implementation.js`
 6. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, `GEMINI.md` for Gemini CLI, `QWEN.md` for Qwen Code, or `AGENTS.md` for all other agents).
 7. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
@@ -31,7 +31,7 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-Implement local CLI capabilities to authenticate to a ZTE MC888 modem using the frontend-compatible REST flow (as defined in `js_implementation.js`), retrieve and display modem metrics, and provide a generic discovery subcommand to fetch arbitrary endpoints. Include TDD with mocked HTTP interactions and maintain a repository of Markdown example files for discover inputs/outputs under `docs/discover`. Discover supports `--path`, `--payload`, `--method` (default GET if no payload, POST if payload), and `--target-file` to write and return the example file path.
+Implement a local CLI that authenticates to a ZTE MC888 modem using the frontend-compatible REST flow (see `js_implementation.js`), retrieves modem metrics, and provides a generic `zte discover` subcommand to fetch arbitrary endpoints with `--path`, `--payload`, `--method`, and `--target-file`. Follow TDD with mocked HTTP interactions and maintain Markdown example inputs/outputs under `docs/discover`. Replace and remove prior hello-world scaffolding in favor of the real solution.
 
 ## Technical Context
 **Language/Version**: Python 3.12 (uv-managed)
@@ -41,7 +41,7 @@ Implement local CLI capabilities to authenticate to a ZTE MC888 modem using the 
 **Target Platform**: Linux server / local workstation
 **Project Type**: single
 **Performance Goals**: [NEEDS CLARIFICATION]
-**Constraints**: Local-network only modem access; do not redact logs (user responsibility)
+**Constraints**: Local-network only; remove hello-world scaffolding; logs not redacted (user responsibility)
 **Scale/Scope**: Single modem, single host; extensible endpoints
 
 ## Constitution Check
@@ -74,6 +74,7 @@ specs/[###-feature]/
   not include Option labels.
 -->
 ```
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
 src/
 ├── models/
 ├── services/
@@ -108,7 +109,7 @@ ios/ or android/
 └── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: Single-project structure. Use existing `src/` and `tests/` roots with subfolders as outlined above.
+**Structure Decision**: Single-project structure using `src/` and `tests/` roots with subfolders as outlined above.
 
 ## Phase 0: Outline & Research
 1. **Extract unknowns from Technical Context** above:
@@ -206,7 +207,7 @@ ios/ or android/
 **Phase Status**:
 - [x] Phase 0: Research complete (/plan command)
 - [x] Phase 1: Design complete (/plan command)
-- [ ] Phase 2: Task planning complete (/plan command - describe approach only)
+- [x] Phase 2: Task planning complete (/plan command - tasks.md created)
 - [ ] Phase 3: Tasks generated (/tasks command)
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed

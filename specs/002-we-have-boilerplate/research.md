@@ -7,7 +7,7 @@ Date: 2025-10-06
 1) Authentication flow specifics (endpoint, method, tokens)
 - Resolution: Use `js_implementation.js` as source of truth. Extract login URL, parameters (including hashing/salting), cookies/token names, CSRF use, and retry/expiry behavior.
 - Human steps (if needed):
-  - Open modem UI at `http://192.168.0.1/` and login normally.
+  - Open modem UI at your modem host (e.g., `http://192.168.0.1/`) and login normally.
   - Use browser DevTools → Network to capture the login request and subsequent authenticated API calls.
   - Record: request method, URL path, headers, form data/body, response codes, set-cookie headers, and any CSRF/token fields.
   - Share captured details verbatim for contract finalization.
@@ -36,4 +36,3 @@ Date: 2025-10-06
 
 - Store examples under `specs/002.../discover-examples`: Rejected to keep shared examples in a stable docs location across features.
 - Force POST for all discover calls: Rejected; defaults should reflect typical REST usage and minimize surprises.
-

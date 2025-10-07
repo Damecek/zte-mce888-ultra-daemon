@@ -5,9 +5,9 @@ This folder defines request/response contracts used for mocking and tests.
 ## CLI Contract: `zte discover`
 
 Inputs
-- `--host`: Modem host/IP (default `192.168.0.1` if unspecified in CLI)
+- `--host`: Modem host/IP (required; no default)
 - `--path`: Relative endpoint path (e.g., `goform/goform_get_cmd_process?isTest=false&cmd=lan_station_list`)
-- `--payload`: Optional data; when provided default method becomes POST
+- `--payload`: Optional data; when provided default method becomes POST; encoded as JSON with `Content-Type: application/json` by default
 - `--method`: Optional override (GET|POST)
 - `--target-file`: Optional Markdown file path under `docs/discover` to write example
 
@@ -28,4 +28,3 @@ Behavior
 - Path: `goform/goform_get_cmd_process?isTest=false&cmd=lan_station_list`
 - Method: GET
 - Response: JSON (array/object per device entries) [capture via discover and store in docs/discover]
-
