@@ -1,8 +1,9 @@
 from click.testing import CliRunner
+import re
 
 import pytest
 
-from zte_daemon.cli.main import cli
+from cli.zte import cli
 
 
 @pytest.fixture()
@@ -16,8 +17,16 @@ def test_top_level_help_includes_commands(runner: CliRunner) -> None:
     output = result.output
     assert "Usage: zte [OPTIONS] COMMAND [ARGS]..." in output
     assert "--version  Show the version and exit." in output
-    assert "run   Run the ZTE modem daemon with mocked MQTT publish loop." in output
-    assert "read  Read a modem metric from cached telemetry (e.g., RSRP, Provider)." in output
+    assert re.search(
+        r"^\s*run\s+Run the ZTE modem daemon with mocked MQTT publish loop\.",
+        output,
+        flags=re.M,
+    )
+    assert re.search(
+        r"^\s*read\s+Read a modem metric from cached telemetry \(e\.g\., RSRP, Provider\)\.",
+        output,
+        flags=re.M,
+    )
 
 
 def test_run_command_help_matches_contract(runner: CliRunner) -> None:

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from ..fixtures import load_latest_snapshot
-from zte_daemon.modem.mock_client import MockModemClient, ModemFixtureError
+from services.modem_mock import MockModemClient, ModemFixtureError
 
 
 @pytest.fixture()

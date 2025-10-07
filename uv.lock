@@ -193,6 +193,8 @@ dependencies = [
     { name = "click" },
     { name = "gmqtt" },
     { name = "httpx" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
 ]
 
 [package.optional-dependencies]
@@ -207,7 +209,9 @@ requires-dist = [
     { name = "click", specifier = ">=8.1" },
     { name = "gmqtt", specifier = ">=0.6" },
     { name = "httpx", specifier = ">=0.27" },
+    { name = "pytest", specifier = ">=8.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", specifier = ">=0.23" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
 ]
 provides-extras = ["dev"]

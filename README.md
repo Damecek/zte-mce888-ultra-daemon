@@ -56,9 +56,20 @@ Captured examples appear alongside the generated JSON snapshots to support contr
 4. Re-run the CLI or tests to replay the latest telemetry.
 
 ## Tests
-Execute the full suite via:
+Recommended (installs pytest transiently and works without a dev venv):
 
 ```bash
+uv run --with pytest pytest
+```
+
+If you prefer using the project dev extras, either:
+
+```bash
+# one-off: bring in dev extras for this run
+uv run --with .[dev] pytest
+
+# or install dev extras into the environment, then run normally
+uv sync --extra dev
 uv run pytest
 ```
 

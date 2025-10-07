@@ -1,4 +1,5 @@
 """HTTP client for interacting with the ZTE MC888 modem REST API."""
+
 from __future__ import annotations
 
 import hashlib
@@ -63,7 +64,9 @@ class ZTEClient:
     ) -> None:
         self.base_url = _normalize_host(host)
         self._timeout = timeout
-        self._client = httpx.Client(base_url=self.base_url, timeout=timeout, transport=transport)
+        self._client = httpx.Client(
+            base_url=self.base_url, timeout=timeout, transport=transport
+        )
         self._session = SessionState()
 
     def close(self) -> None:
@@ -93,11 +96,15 @@ class ZTEClient:
         required_keys = {"wa_inner_version", "cr_version", "RD", "LD"}
         if not required_keys.issubset(payload):
             missing = required_keys.difference(payload)
-            raise ResponseParseError(f"Handshake missing fields: {', '.join(sorted(missing))}")
+            raise ResponseParseError(
+                f"Handshake missing fields: {', '.join(sorted(missing))}"
+            )
 
         hash_fn = self._choose_hash(payload["wa_inner_version"])
         password_hash = sha256_hex(password)
-        ad = hash_fn(hash_fn(payload["wa_inner_version"] + payload["cr_version"]) + payload["RD"])
+        ad = hash_fn(
+            hash_fn(payload["wa_inner_version"] + payload["cr_version"]) + payload["RD"]
+        )
         encoded_password = sha256_hex(password_hash + payload["LD"])
 
         form_data = {
@@ -118,7 +125,9 @@ class ZTEClient:
         except httpx.HTTPError as exc:  # pragma: no cover - defensive
             raise RequestError("Login request failed") from exc
 
-        cookie = login_response.headers.get("set-cookie") or login_response.headers.get("Set-Cookie")
+        cookie = login_response.headers.get("set-cookie") or login_response.headers.get(
+            "Set-Cookie"
+        )
         if cookie:
             self._session.cookie = cookie.split(";", 1)[0]
 
@@ -132,7 +141,7 @@ class ZTEClient:
             reason = {
                 "1": "Try again later",
                 "3": "Wrong Password",
-            }.get(result_code, "Unknown error")
+            }.get(result_code, "Unknown error " + result_code)
             self._session.authenticated = False
             raise AuthenticationError(f"Authentication failed: {reason}")
 
@@ -182,7 +191,9 @@ class ZTEClient:
                 headers.setdefault("Content-Type", "application/json")
 
         try:
-            response = self._client.request(resolved_method.upper(), path, **request_kwargs)
+            response = self._client.request(
+                resolved_method.upper(), path, **request_kwargs
+            )
         except httpx.TimeoutException as exc:
             raise TimeoutError("Request timed out") from exc
         except httpx.HTTPError as exc:  # pragma: no cover - defensive

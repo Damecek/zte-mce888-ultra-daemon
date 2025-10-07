@@ -5,8 +5,8 @@ from pathlib import Path
 from click.testing import CliRunner
 import pytest
 
-from zte_daemon.cli.main import cli
-from zte_daemon.mqtt.mock_broker import get_last_record
+from cli.zte import cli
+from services.mqtt_mock import get_last_record
 
 
 @pytest.fixture()
