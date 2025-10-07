@@ -75,3 +75,31 @@ uv run pytest
 
 Unit tests cover CLI help contracts, command behavior, modem fixture handling, modem discovery flows, and MQTT payload schemas.
 Integration tests run the hello-world and discover flows end-to-end using the mocks.
+
+## Linting & Formatting
+Use Ruff for lint checks, import sorting, auto-fixes, a formátování kódu.
+
+Quick usage (no local install needed):
+
+```bash
+uvx ruff check .
+uvx ruff check . --fix
+uvx ruff format
+```
+
+Alternatively, pokud chceš Ruff v prostředí projektu:
+
+```bash
+uv run --with ruff ruff check .
+uv run --with ruff ruff check . --fix
+uv run --with ruff ruff format
+```
+
+### Pre-commit hook
+Konfigurace je v `.pre-commit-config.yaml`. Pro aktivaci hooků:
+
+```bash
+uvx pre-commit install
+# Spustit hooky na celé repo
+uvx pre-commit run -a
+```

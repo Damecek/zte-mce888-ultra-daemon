@@ -17,6 +17,7 @@ tests/
 - uv run zte --help
 - uv run pytest
 - ruff check .
+- uvx ruff check .
 
 ## Code Style
 Python 3.12 (uv-managed "python stable"): Follow standard conventions

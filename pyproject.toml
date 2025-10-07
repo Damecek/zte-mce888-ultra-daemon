@@ -30,3 +30,17 @@ addopts = "-ra"
 
 [project.scripts]
 zte = "cli.zte:cli"
+
+[tool.ruff]
+# Keep lines readable and match our Python version
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Core error/warning rules, import sorting, and modernization
+select = ["E", "F", "I", "UP"]
+ignore = []
+
+[tool.ruff.format]
+# Use Ruff's opinionated formatter for consistency
+preview = true
