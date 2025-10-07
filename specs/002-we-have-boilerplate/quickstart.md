@@ -16,6 +16,9 @@ zte discover --host 192.168.0.1 \
   --target-file docs/discover/lan_station_list.md
 ```
 
+The CLI prints the JSON response, writes a Markdown transcript, and stores a
+matching JSON payload next to the Markdown file for use in tests.
+
 POST with payload (method defaults to POST when payload present):
 ```
 zte discover --host 192.168.0.1 \

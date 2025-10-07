@@ -5,9 +5,9 @@ import json
 from dataclasses import dataclass, asdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, Protocol, runtime_checkable
 
-from zte_daemon.modem.mock_client import ModemSnapshot
+from zte_daemon.modem.metrics import MetricSnapshot
 
 _DEFAULT_LOG = Path("logs") / "mqtt-mock.jsonl"
 
@@ -21,6 +21,12 @@ class PublishRecord:
     published_at: str
 
 
+@runtime_checkable
+class SnapshotProtocol(Protocol):
+    timestamp: Any
+    provider: Any
+
+
 class MockMQTTBroker:
     """Records publishes without hitting a real broker."""
 
@@ -31,15 +37,29 @@ class MockMQTTBroker:
         self.log_path = Path(log_path) if log_path else _DEFAULT_LOG
         self.records: List[PublishRecord] = []
 
-    def build_payload(self, snapshot: ModemSnapshot) -> Dict[str, Any]:
-        captured_at = snapshot.timestamp
+    def _extract_metrics(self, snapshot: SnapshotProtocol) -> tuple[Any, Any, str]:
+        if isinstance(snapshot, MetricSnapshot):
+            captured_at = snapshot.timestamp.isoformat()
+            rsrp_value = snapshot.rsrp1
+            provider = snapshot.provider
+        else:
+            captured_at = snapshot.timestamp
+            if hasattr(snapshot, "rsrp1"):
+                rsrp_value = getattr(snapshot, "rsrp1")
+            else:
+                rsrp_value = getattr(snapshot, "rsrp", None)
+            provider = getattr(snapshot, "provider", None)
+        return provider, rsrp_value, captured_at
+
+    def build_payload(self, snapshot: SnapshotProtocol) -> Dict[str, Any]:
+        provider, rsrp_value, captured_at = self._extract_metrics(snapshot)
         return {
             "schema_version": "0.1.0-mock",
             "device_id": self.device_id,
             "status": "mock",
             "metrics": {
-                "rsrp": {"value": snapshot.rsrp, "unit": "dBm"},
-                "provider": {"value": snapshot.provider, "unit": None},
+                "rsrp": {"value": rsrp_value, "unit": "dBm"},
+                "provider": {"value": provider, "unit": None},
                 "captured_at": captured_at,
             },
             "meta": {
@@ -49,7 +69,7 @@ class MockMQTTBroker:
         }
 
     def publish(
-        self, snapshot: ModemSnapshot, *, topic: str, broker_host: str | None
+        self, snapshot: SnapshotProtocol, *, topic: str, broker_host: str | None
     ) -> PublishRecord:
         payload = self.build_payload(snapshot)
         note = (
