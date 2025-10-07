@@ -17,7 +17,7 @@ Date: 2025-10-06
 - Source: `js_implementation.js` functions that fetch and parse metrics.
 
 3) HTTP client library choice
-- Resolution: Pending. Either `requests` or `httpx` acceptable; choose based on async needs and testing ergonomics.
+- Resolution: Chosen `httpx` for its unified sync/async API and excellent test utilities (`httpx.MockTransport`) while remaining fully compatible with Python 3.12 CLI workflows.
 - Decision target: Phase 1 before coding.
 
 4) Rate limiting / throttling behavior

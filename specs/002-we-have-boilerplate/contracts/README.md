@@ -19,10 +19,10 @@ Behavior
 ## HTTP Contracts
 
 ### Authentication (from js_implementation.js)
-- Login endpoint: [extract from js_implementation.js]
-- Method: [extract]
-- Params/body: [extract]
-- Cookies/tokens: [extract]
+- **Challenge request**: `GET /goform/goform_get_cmd_process` with query params `cmd=wa_inner_version,cr_version,RD,LD` and `multi_data=1`. Response includes the challenge values `wa_inner_version`, `cr_version`, `RD`, and `LD`.
+- **Hash selection**: For MC888/MC889 the script uses SHA256, otherwise it falls back to MD5. Python client mirrors this behavior.
+- **Login request**: `POST /goform/goform_set_cmd_process` with form data `isTest=false`, `goformId=LOGIN`, `password=SHA256(SHA256(password) + LD)`, `AD=SHA256(SHA256(wa_inner_version + cr_version) + RD)`.
+- **Session token**: Successful responses return `{"result":"0"}` and include a `Set-Cookie` header (e.g., `SESSIONID=<value>`). Subsequent API calls must send the cookie unchanged.
 
 ### Example: LAN Station List
 - Path: `goform/goform_get_cmd_process?isTest=false&cmd=lan_station_list`
