@@ -1,11 +1,12 @@
-"""Implementation of the `zte run` command."""
+"""Implementation of the `zte run` command (flattened src layout)."""
+
 from __future__ import annotations
 
 import click
 
-from zte_daemon.logging.config import configure_logging
-from zte_daemon.modem.mock_client import MockModemClient, ModemFixtureError
-from zte_daemon.mqtt.mock_broker import MockMQTTBroker
+from lib.logging_setup import get_logger, logging_options
+from services.modem_mock import MockModemClient, ModemFixtureError
+from services.mqtt_mock import MockMQTTBroker
 
 
 def _derive_device_id(device_host: str) -> str:
@@ -26,14 +27,7 @@ def _derive_device_id(device_host: str) -> str:
     required=True,
     help="Password used for modem REST authentication",
 )
-@click.option(
-    "log_level",
-    "--log",
-    type=click.Choice(["debug", "info", "warn", "error"], case_sensitive=False),
-    default="info",
-    show_default=True,
-    help="Log level for stdout and file handlers",
-)
+@logging_options(help_text="Log level for stdout and file handlers")
 @click.option(
     "foreground",
     "--foreground",
@@ -42,12 +36,8 @@ def _derive_device_id(device_host: str) -> str:
     help="Run in foreground (runs in background by default).",
 )
 @click.option(
-    "log_file",
-    "--log-file",
-    type=click.Path(path_type=str),
-    help="Optional log file destination (ensures parent dir exists).",
+    "mqtt_host", "--mqtt-host", help="Placeholder broker address (stored but not contacted)."
 )
-@click.option("mqtt_host", "--mqtt-host", help="Placeholder broker address (stored but not contacted).")
 @click.option(
     "mqtt_topic",
     "--mqtt-topic",
@@ -70,11 +60,11 @@ def run_command(
     mqtt_password: str | None,
 ) -> dict[str, object]:
     """Run the ZTE modem daemon with mocked MQTT publish loop."""
-    del device_pass  # authentication not required for mock flow but accepted for contract compliance
-    logger = configure_logging(log_level, log_file)
+    del device_pass  # not required for mock flow
+    logger = get_logger(log_level, log_file)
+    device_id = _derive_device_id(device_host)
     logger.info(
-        "Starting mocked daemon run",
-        extra={"component": "CLI", "context": {"foreground": foreground}},
+        f"Starting mocked daemon run (foreground={foreground}, device_id={device_id})"
     )
 
     modem = MockModemClient()
@@ -87,17 +77,10 @@ def run_command(
     click.echo(f"Modem snapshot timestamp: {snapshot.timestamp}")
     click.echo(f"RSRP: {snapshot.rsrp} dBm | Provider: {snapshot.provider}")
 
-    broker = MockMQTTBroker(device_id=_derive_device_id(device_host))
+    broker = MockMQTTBroker(device_id=device_id)
     record = broker.publish(snapshot, topic=mqtt_topic, broker_host=mqtt_host)
     logger.info(
-        "Recorded MQTT payload to mock broker",
-        extra={
-            "component": "MQTTMock",
-            "context": {
-                "topic": mqtt_topic,
-                "broker_host": mqtt_host or "mock-default",
-            },
-        },
+        f"Recorded MQTT payload to mock broker (topic={mqtt_topic}, broker={mqtt_host or 'mock-default'})"
     )
     click.echo("Recorded MQTT payload to mock broker for offline inspection.")
 

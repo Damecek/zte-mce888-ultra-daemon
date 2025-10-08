@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from click.testing import CliRunner
 import pytest
+from click.testing import CliRunner
 
-from zte_daemon.cli.main import cli
+from cli.zte import cli
 
 
 @pytest.fixture()

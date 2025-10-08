@@ -18,14 +18,13 @@
 - Include absolute file paths in descriptions
 
 ## Phase 3.1: Setup
-- [ ] T001 Create source and test structure per plan
-  - Ensure directories: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/{modem,cli/lib,logging}` and `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/{contract,integration,unit,fixtures}`
+- [X] T001 Create source and test structure per plan
+  - Create directories: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/{models,services,cli,lib}` and `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/{contract,integration,unit,fixtures}`
   - Add `.gitkeep` files where needed
-- [ ] T002 Decide HTTP client and record in research
-  - Decision: use `httpx` (chosen)
-  - Update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/specs/002-we-have-boilerplate/research.md` with rationale
+- [X] T002 Decide HTTP client and record in research
+  - Update decision in `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/specs/002-we-have-boilerplate/research.md` (choose `requests` or `httpx` with rationale)
   - Add dependency in `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/pyproject.toml`
-- [ ] T003 [P] Ensure docs/discover exists for example files
+- [X] T003 [P] Ensure docs/discover exists for example files
   - Create directory: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/discover`
 - [ ] T004 Remove hello-world baseline artifacts but retain command names
   - Delete: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/integration/test_hello_world_flow.py`
@@ -35,25 +34,25 @@
   - Add superseded note to: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/specs/001-initialize-boilerplate-hello/spec.md`
 
 ## Phase 3.2: Tests First (TDD) — must fail before implementation
-- [ ] T005 [P] Contract test: Authentication flow (from js_implementation.js)
+- [X] T004 [P] Contract test: Authentication flow (from js_implementation.js)
   - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_auth_flow.py`
   - Mock login endpoint, cookies/tokens, and a protected GET to assert session handling
-- [ ] T006 [P] Contract test: Discover default method = GET when no payload
+- [X] T005 [P] Contract test: Discover default method = GET when no payload
   - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_discover_default_get.py`
   - Use Click CliRunner to invoke `zte discover --path ...` and assert GET used
-- [ ] T007 [P] Contract test: Discover default method = POST when payload present
+- [X] T006 [P] Contract test: Discover default method = POST when payload present
   - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_discover_default_post.py`
   - Assert POST used unless `--method` overrides
-- [ ] T008 [P] Contract test: `--target-file` writes Markdown under docs/discover
+- [X] T007 [P] Contract test: `--target-file` writes Markdown under docs/discover
   - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_discover_target_file.py`
   - Assert file content includes request (path, method, payload) and response blocks
-- [ ] T009 Integration test: CLI discover end-to-end behavior and exit codes
+- [X] T008 Integration test: CLI discover end-to-end behavior and exit codes
   - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/integration/test_cli_discover.py`
   - Cover unreachable host, auth failure, success with JSON body
-- [ ] T010 [P] Unit test: ZTE client error mapping and timeouts
+- [X] T009 [P] Unit test: ZTE client error mapping and timeouts
   - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/unit/test_zte_client_errors.py`
   - Assert clear exceptions for timeouts, 401/403, parse errors
-- [ ] T011 [P] Unit test: Metrics documentation completeness list exists
+- [X] T010 [P] Unit test: Metrics documentation completeness list exists
   - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/unit/test_metrics_docs.py`
   - Ensure `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/metrics.md` includes all metrics from Clarifications
 - [ ] T012 [P] Contract test: Missing `--host` yields clear error and non-zero exit
@@ -70,22 +69,22 @@
   - Assert it performs a fetch cycle, logs status, and exits deterministically in test mode
 
 ## Phase 3.3: Core Implementation (only after tests fail)
-- [ ] T016 Implement ZTE REST client
-  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/modem/zte_client.py`
+- [X] T011 Implement ZTE REST client
+  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/services/zte_client.py`
   - Provide: constructor(host), `login(password, ...)`, `request(path, method, payload=None, expects="json|text")`
   - Manage cookies/tokens per `js_implementation.js`
-- [ ] T017 Implement CLI: `zte discover`
-  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/cli/commands/discover.py`
+- [X] T012 Implement CLI: `zte discover`
+  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/cli/zte.py`
   - Click group `zte`; subcommand `discover` with `--host`, `--password`, `--path`, `--payload`, `--method`, `--target-file`
   - Default GET if no payload; POST if payload; `--method` overrides
-- [ ] T018 Implement Markdown writer for discover outputs
-  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/lib/markdown_io.py`
+- [X] T013 Implement Markdown writer for discover outputs
+  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/lib/markdown_io.py`
   - Function `write_discover_example(target_file, host, path, method, payload, response)`
-- [ ] T019 Wire logging per policy (no redaction)
-  - Use `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/logging/config.py` and integrate into CLI and services
-- [ ] T020 Define metric snapshot structures
-  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/modem/metrics.py` aligned with data-model.md
-- [ ] T021 Document metrics in Markdown
+- [X] T014 Wire logging per policy (no redaction)
+  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/lib/logging_setup.py` and integrate into CLI and services
+- [X] T015 Define metric snapshot structures
+  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/models/metrics.py` aligned with data-model.md
+- [X] T016 Document metrics in Markdown
   - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/metrics.md` enumerating LTE/5G metrics, provider/cell, neighbors, connection, bands, WAN IP, temps (A/M/P)
 - [ ] T022 Refactor CLI: `zte read` to use REST client
   - Update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/cli/commands/read.py` to fetch a specific metric
@@ -93,27 +92,27 @@
   - Update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/cli/commands/run.py` to call the REST client (test mode)
 
 ## Phase 3.4: Integration
-- [ ] T024 Enforce method defaulting and overrides in CLI and client
-  - Verify behaviors against tests T006–T007
-- [ ] T025 Implement clear error messages and exit codes
+- [X] T017 Enforce method defaulting and overrides in CLI and client
+  - Verify behaviors against tests T005-T006
+- [X] T018 Implement clear error messages and exit codes
   - Map auth/network/parse errors to non-zero exits in CLI
-- [ ] T026 Add single retry on session expiry
+- [X] T019 Add single retry on session expiry
   - Detect unauthenticated response; retry login once then fail
-- [ ] T027 Add snapshot capture helper for mocks
-  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/lib/snapshots.py` to persist example payloads optionally alongside docs/discover
+- [X] T020 Add snapshot capture helper for mocks
+  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/lib/snapshots.py` to persist example payloads optionally alongside docs/discover
 
 ## Phase 3.5: Polish
-- [ ] T028 [P] Seed example discover files
+- [X] T021 [P] Seed example discover files
   - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/discover/lan_station_list.md` with sample
-- [ ] T029 [P] Update CLI docs
-  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/cli.md` documenting `zte run`, `zte read`, and `zte discover` usage and options
-- [ ] T030 [P] Lint and static checks
+- [X] T022 [P] Update CLI docs
+  - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/cli.md` documenting `zte discover` usage and options
+- [X] T023 [P] Lint and static checks
   - Run `ruff check .` at repo root: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon`
-- [ ] T031 [P] Final test run
+- [X] T024 [P] Final test run
   - Run `pytest` at repo root and ensure all tests pass
-- [ ] T032 [P] README and quickstart updates
+- [X] T025 [P] README and quickstart updates
   - Update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/README.md` to link to docs and include examples
-- [ ] T033 [P] Record auth contract details
+- [X] T026 [P] Record auth contract details
   - Extract from `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/js_implementation.js` and update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/specs/002-we-have-boilerplate/contracts/README.md`
 
 ## Dependencies
@@ -136,11 +135,10 @@ Task: "pytest /Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/tes
 ```
 
 ## Validation Checklist
-- [ ] All modem REST contracts have corresponding test tasks
-- [ ] All targeted modem metrics are documented in docs/metrics.md
-- [ ] CLI discover behaviors covered by tests (defaults, overrides, target-file)
-- [ ] Tests cover missing `--host` and JSON header behavior
-- [ ] `zte run` and `zte read` tests exist and pass
-- [ ] All tests precede implementation
-- [ ] Parallel tasks are independent and include absolute file paths
-- [ ] No two [P] tasks modify the same file
+- [X] All modem REST contracts have corresponding test tasks
+- [X] All targeted modem metrics are documented in docs/metrics.md
+- [X] CLI discover behaviors covered by tests (defaults, overrides, target-file)
+- [X] All tests precede implementation
+- [X] Parallel tasks are independent and include absolute file paths
+- [X] No two [P] tasks modify the same file
+

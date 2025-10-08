@@ -4,7 +4,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from zte_daemon.cli.main import cli
+from cli.zte import cli
 
 
 def test_run_then_read_flow(tmp_path: Path) -> None:

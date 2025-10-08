@@ -5,8 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from services.mqtt_mock import MockMQTTBroker
+
 from ..fixtures import load_latest_snapshot
-from zte_daemon.mqtt.mock_broker import MockMQTTBroker
 
 
 @pytest.fixture()

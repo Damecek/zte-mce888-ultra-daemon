@@ -14,7 +14,10 @@ tests/
 ```
 
 ## Commands
-cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] pytest [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] ruff check .
+- uv run zte --help
+- uv run pytest
+- ruff check .
+- uvx ruff check .
 
 ## Code Style
 Python 3.12 (uv-managed "python stable"): Follow standard conventions
@@ -24,4 +27,6 @@ Python 3.12 (uv-managed "python stable"): Follow standard conventions
 - 001-initialize-boilerplate-hello: Documented Python 3.12 uv toolchain with mocked gmqtt + Click CLI hello-world scaffolding
 
 <!-- MANUAL ADDITIONS START -->
+Recommended: use `uv run pytest` directly; `pytest` is part of the main
+dependencies to simplify CI and local runs without extras.
 <!-- MANUAL ADDITIONS END -->
