@@ -1,8 +1,4 @@
-"""Implementation of the `zte discover` command consolidated under commands/.
-
-This module intentionally references symbols from `cli.zte` so tests that
-monkeypatch `cli.zte.ZTEClient` or `cli.zte.markdown_io` continue to work.
-"""
+"""Implementation of the `zte discover` command consolidated under commands/."""
 
 from __future__ import annotations
 
@@ -12,8 +8,14 @@ from pathlib import Path
 import click
 import httpx
 
-# Keep references via the root CLI module for test monkeypatching
-from cli import zte as cli_module
+from lib import markdown_io, snapshots
+from services.zte_client import (
+    AuthenticationError,
+    RequestError,
+    ResponseParseError,
+    TimeoutError,
+    ZTEClient,
+)
 
 
 @click.command(name="discover", help="Invoke modem REST endpoints and capture responses")
@@ -40,7 +42,7 @@ def discover_command(
     effective_method = method.upper() if method else ("POST" if payload else "GET")
 
     try:
-        client = cli_module.ZTEClient(host)
+        client = ZTEClient(host)
     except httpx.ConnectError as exc:  # pragma: no cover - defensive: instantiation may not raise
         raise click.ClickException(f"Unable to connect to modem host: {exc}") from exc
 
@@ -49,18 +51,18 @@ def discover_command(
         response = client.request(path, method=effective_method, payload=payload, expects="json")
     except httpx.ConnectError as exc:
         raise click.ClickException("Unable to connect to modem host") from exc
-    except cli_module.TimeoutError as exc:
+    except TimeoutError as exc:
         raise click.ClickException(f"Request timed out: {exc}") from exc
-    except cli_module.AuthenticationError as exc:
+    except AuthenticationError as exc:
         raise click.ClickException(str(exc)) from exc
-    except cli_module.ResponseParseError as exc:
+    except ResponseParseError as exc:
         raise click.ClickException(f"Failed to parse modem response: {exc}") from exc
-    except cli_module.RequestError as exc:
+    except RequestError as exc:
         raise click.ClickException(str(exc)) from exc
 
     if target_file:
         target_path = target_file if target_file.is_absolute() else Path.cwd() / target_file
-        cli_module.markdown_io.write_discover_example(
+        markdown_io.write_discover_example(
             target_path,
             host=host,
             path=path,
@@ -68,7 +70,7 @@ def discover_command(
             payload=payload,
             response=response,
         )
-        cli_module.snapshots.save_snapshot(
+        snapshots.save_snapshot(
             target_path.parent,
             name=target_path.stem,
             request={
@@ -89,4 +91,3 @@ def discover_command(
 
 
 __all__ = ["discover_command"]
-

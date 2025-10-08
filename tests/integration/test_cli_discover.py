@@ -12,7 +12,7 @@ def test_discover_reports_unreachable_host(monkeypatch):
         def __init__(self, *args, **kwargs):
             raise httpx.ConnectError("boom", request=httpx.Request("GET", "http://example"))
 
-    monkeypatch.setattr(cli_module, "ZTEClient", FailingClient)
+    monkeypatch.setattr(zte_client, "ZTEClient", FailingClient)
 
     result = runner.invoke(
         cli_module.cli,
@@ -33,7 +33,7 @@ def test_discover_reports_auth_failure(monkeypatch):
         def login(self, password: str) -> None:
             raise zte_client.AuthenticationError("bad credentials")
 
-    monkeypatch.setattr(cli_module, "ZTEClient", Client)
+    monkeypatch.setattr(zte_client, "ZTEClient", Client)
 
     result = runner.invoke(
         cli_module.cli,
@@ -57,7 +57,7 @@ def test_discover_success_prints_response(monkeypatch):
         def request(self, path: str, method: str, payload=None, expects: str = "json"):
             return {"status": "ok"}
 
-    monkeypatch.setattr(cli_module, "ZTEClient", Client)
+    monkeypatch.setattr(zte_client, "ZTEClient", Client)
 
     result = runner.invoke(
         cli_module.cli,

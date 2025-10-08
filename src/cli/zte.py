@@ -12,13 +12,6 @@ from lib import (
     markdown_io,  # noqa: F401 - re-exported for tests via cli module
     snapshots,  # noqa: F401 - re-exported for tests via cli module
 )
-from services.zte_client import (
-    AuthenticationError,  # noqa: F401 - re-exported for tests via cli module
-    RequestError,  # noqa: F401 - re-exported for tests via cli module
-    ResponseParseError,  # noqa: F401 - re-exported for tests via cli module
-    TimeoutError,  # noqa: F401 - re-exported for tests via cli module
-    ZTEClient,  # noqa: F401 - re-exported for tests via cli module
-)
 
 
 @click.group(name="zte", help="ZTE MC888 modem utilities")

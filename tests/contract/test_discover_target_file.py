@@ -3,6 +3,8 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from cli import zte as cli_module
+from lib import markdown_io
+from services import zte_client
 
 
 def test_discover_writes_target_markdown(monkeypatch, tmp_path):
@@ -34,8 +36,8 @@ def test_discover_writes_target_markdown(monkeypatch, tmp_path):
     target_file = tmp_path / "docs" / "discover" / "example.md"
     target_file.parent.mkdir(parents=True, exist_ok=True)
 
-    monkeypatch.setattr(cli_module, "ZTEClient", DummyClient)
-    monkeypatch.setattr(cli_module.markdown_io, "write_discover_example", fake_write)
+    monkeypatch.setattr(zte_client, "ZTEClient", DummyClient)
+    monkeypatch.setattr(markdown_io, "write_discover_example", fake_write)
 
     result = runner.invoke(
         cli_module.cli,

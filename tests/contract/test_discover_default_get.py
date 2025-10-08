@@ -1,6 +1,7 @@
 from click.testing import CliRunner
 
 from cli import zte as cli_module
+from services import zte_client
 
 
 def test_discover_defaults_to_get_when_no_payload(monkeypatch):
@@ -22,7 +23,7 @@ def test_discover_defaults_to_get_when_no_payload(monkeypatch):
             calls["payload"] = payload
             return {"status": "ok"}
 
-    monkeypatch.setattr(cli_module, "ZTEClient", DummyClient)
+    monkeypatch.setattr(zte_client, "ZTEClient", DummyClient)
     result = runner.invoke(
         cli_module.cli,
         [
