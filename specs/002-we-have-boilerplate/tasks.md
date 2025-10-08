@@ -26,6 +26,12 @@
   - Add dependency in `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/pyproject.toml`
 - [X] T003 [P] Ensure docs/discover exists for example files
   - Create directory: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/discover`
+- [ ] T004 Remove hello-world baseline artifacts but retain command names
+  - Delete: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/integration/test_hello_world_flow.py`
+  - Remove hello greeting from: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/cli/commands/run.py`
+  - Update README title and sections to remove "Hello World" at `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/README.md`
+  - Update project description in `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/pyproject.toml`
+  - Add superseded note to: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/specs/001-initialize-boilerplate-hello/spec.md`
 
 ## Phase 3.2: Tests First (TDD) — must fail before implementation
 - [X] T004 [P] Contract test: Authentication flow (from js_implementation.js)
@@ -49,6 +55,18 @@
 - [X] T010 [P] Unit test: Metrics documentation completeness list exists
   - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/unit/test_metrics_docs.py`
   - Ensure `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/metrics.md` includes all metrics from Clarifications
+- [ ] T012 [P] Contract test: Missing `--host` yields clear error and non-zero exit
+  - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_missing_host_required.py`
+  - Assert both `zte discover` and `zte read` fail without `--host`
+- [ ] T013 [P] Contract test: `--payload` JSON encoding and header
+  - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_payload_json_header.py`
+  - Assert `Content-Type: application/json` and JSON body sent
+- [ ] T014 Integration test: `zte read <metric>` success and unknown metric error
+  - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/integration/test_cli_read_metric.py`
+  - Use CliRunner with mocked client to return a known metric; assert outputs/exit codes
+- [ ] T015 Integration test: `zte run` executes minimal real REST-driven workflow
+  - Create `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/integration/test_cli_run_daemon.py`
+  - Assert it performs a fetch cycle, logs status, and exits deterministically in test mode
 
 ## Phase 3.3: Core Implementation (only after tests fail)
 - [X] T011 Implement ZTE REST client
@@ -68,6 +86,10 @@
   - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/models/metrics.py` aligned with data-model.md
 - [X] T016 Document metrics in Markdown
   - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/metrics.md` enumerating LTE/5G metrics, provider/cell, neighbors, connection, bands, WAN IP, temps (A/M/P)
+- [ ] T022 Refactor CLI: `zte read` to use REST client
+  - Update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/cli/commands/read.py` to fetch a specific metric
+- [ ] T023 Refactor CLI: `zte run` to orchestrate a minimal fetch cycle
+  - Update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/cli/commands/run.py` to call the REST client (test mode)
 
 ## Phase 3.4: Integration
 - [X] T017 Enforce method defaulting and overrides in CLI and client
@@ -94,10 +116,12 @@
   - Extract from `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/js_implementation.js` and update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/specs/002-we-have-boilerplate/contracts/README.md`
 
 ## Dependencies
-- T004–T010 (tests) precede T011–T016 (implementation)
-- T011 (client) precedes T012 (CLI) and T017–T019 (integration behaviors)
-- T013 (Markdown writer) needed before T007 and T012 pass
-- T016 (metrics docs) required before T010 passes
+- T005–T015 (tests) precede T016–T023 (implementation)
+- T016 (client) precedes T017 (CLI) and T024–T026 (integration behaviors)
+- T018 (Markdown writer) needed before T008 and T017 pass
+- T021 (metrics docs) required before T011 passes
+- T022–T023 after client available
+- T004 (hello-world removal) before any tests to avoid conflicts
 
 ## Parallel Execution Example
 ```
@@ -106,6 +130,8 @@ Task: "pytest /Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/tes
 Task: "pytest /Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_discover_default_get.py -q"
 Task: "pytest /Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_discover_default_post.py -q"
 Task: "pytest /Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_discover_target_file.py -q"
+Task: "pytest /Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_missing_host_required.py -q"
+Task: "pytest /Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/test_payload_json_header.py -q"
 ```
 
 ## Validation Checklist

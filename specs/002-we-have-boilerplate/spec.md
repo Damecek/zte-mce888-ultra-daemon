@@ -62,9 +62,16 @@ When creating this spec from a user prompt:
 - Q: What is the source of truth for modem authentication details and how should missing details be handled? → A: Use `js_implementation.js` as the definitive reference for the REST auth flow. If anything remains unclear, provide the human with precise steps to extract the required info and have them report back.
 - Q: Which metrics are in scope to retrieve and document? → A: All metrics rendered by the JS when inserted into the modem DOM (document in Markdown): LTE (B20) RSRP1, SINR1, RSRP2, SINR2, RSRP3, SINR3, RSRP4, SINR4, RSRQ, RSSI, EARFCN, PCI, BW; 5G (n28) RSRP1, RSRP2, SINR, ARFCN, PCI, BW; PROVIDER; CELL; NGBR entries (e.g., 354/389/39/314 with RSRP/RSRQ); CONNECTION; BANDS; WAN IP; TEMP (A/M/P).
 - Q: How should HTTP method selection work for the `zte discover` command? → A: Add `--method`. Default to GET when no `--payload` is provided; default to POST when `--payload` is provided; allow explicit override via `--method`.
-- Q: How should discover inputs/outputs be shared and returned? → A: Provide a shared folder of Markdown files defining inputs to the discover command together with output payload; the command should return this file and support a `--target-file` flag. [Folder path to be confirmed]
-- Q: Do logs need redaction of sensitive fields? → A: No redaction required; the CLI runs on a local network and users are responsible for not exposing logs.
+- Q: How should discover inputs/outputs be shared and returned? → A: Provide a shared folder of Markdown files defining inputs to the discover command together with output payload; the command should return this file and support a `--target-file` flag.
+ - Q: Do logs need redaction of sensitive fields? → A: No redaction required; the CLI runs on a local network and users are responsible for not exposing logs.
  - Q: Which folder path should be used for discover example Markdown files? → A: docs/discover
+ - Q: Does this specification replace the hello-world baseline and require removal of hello-world code/docs? → A: Yes. This feature supersedes `specs/001-initialize-boilerplate-hello/spec.md`; remove hello-world behavior (greetings/mocks/docs/tests) but RETAIN the CLI command names `zte run` and `zte read` with updated real functionality.
+ - Q: Should the existing commands `zte run` and `zte read` be persisted? → A: Yes. Persist both; `zte run` remains the daemon entry; `zte read <metric>` performs a one-off REST read of the specified metric.
+ - Q: How should authentication handle username? → A: Password only (no username input).
+ - Q: Which default modem host/IP should be used? → A: No default; require `--host`.
+- Q: How should `--payload` be encoded and sent by default? → A: JSON body with `Content-Type: application/json`.
+ - Q: Which HTTP client library should be used? → A: httpx.
+ - Q: How should the `zte discover` subcommand be registered? → A: As a separate command module (`zte discover`) under the CLI commands.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -77,7 +84,11 @@ An operator uses a local CLI to connect to a ZTE MC888 modem on the LAN, authent
 3. Given invalid credentials, when the user runs any command requiring authentication, then the system reports an authentication error, does not display sensitive data, and exits with a non-zero status.
 4. Given the modem is unreachable (timeout or DNS failure), when a request is attempted, then the system reports a network connectivity error and exits with a non-zero status.
 5. Given malformed or unexpected responses from the modem, when parsing is attempted, then the system reports a clear parsing/format error and suggests using `zte discover` to inspect the raw payload.
-6. Given a `zte discover` call without `--payload`, then the request uses GET unless `--method` overrides it; with `--payload`, default to POST unless overridden by `--method`.
+6. Given a `zte discover` call without `--payload`, then the request uses GET unless `--method` overrides it; with `--payload`, default to POST unless overridden by `--method`, and encode payload as JSON with `Content-Type: application/json`.
+7. Given the repository previously contained hello-world scaffolding, when this feature is completed, then the `hello` greeting output and hello-world docs/tests are removed (e.g., `tests/integration/test_hello_world_flow.py`, README hello references), while the CLI commands `zte run` and `zte read` still exist and operate with real REST integration.
+8. Given `zte read <metric>` with a valid metric key and required flags (`--host`, `--password`), when executed, then the CLI returns the metric value and exits 0; for an unknown metric, it exits non-zero with a clear error.
+9. Given any command requiring authentication, when the user runs the CLI, then it never prompts for or requires a username and authenticates using the password-only flow.
+10. Given the CLI is invoked without specifying `--host`, when any command runs, then the CLI errors with a clear message that the host is required and exits non-zero.
 
 ### Edge Cases
 - Session expiry or CSRF/token rotation during a multi-call flow → system should detect unauthenticated state and retry login once before failing. [NEEDS CLARIFICATION: exact auth/session mechanism]
@@ -90,7 +101,7 @@ An operator uses a local CLI to connect to a ZTE MC888 modem on the LAN, authent
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
-- **FR-001**: The CLI MUST allow users to specify modem host/IP and password as inputs for all commands requiring authentication.
+- **FR-001**: The CLI MUST allow users to specify modem host/IP and password as inputs for all commands requiring authentication; host/IP input is REQUIRED (no default), and no username input is required.
 - **FR-002**: The system MUST authenticate against the modem’s frontend-compatible flow before requesting protected endpoints. [NEEDS CLARIFICATION: exact login endpoint, token/cookie, hashing/salting requirements derived from `js_implementation.js`]
 - **FR-003**: The system MUST retrieve modem metrics via REST endpoints as guided by `js_implementation.js`, starting with a minimum viable set to confirm connectivity and parsing. [NEEDS CLARIFICATION: initial metrics list]
 - **FR-004**: The CLI MUST provide a subcommand `zte discover` with options `--path=<relative-endpoint-path>` and optional `--payload=<data>` to fetch and print the raw response body.
@@ -103,6 +114,10 @@ An operator uses a local CLI to connect to a ZTE MC888 modem on the LAN, authent
 - **FR-011**: The `zte discover` command MUST support a `--method` option with defaults: GET when no `--payload` provided, POST when `--payload` provided; `--method` explicitly overrides defaults.
 - **FR-012**: The `zte discover` command MUST support `--target-file` to write a Markdown file containing the request inputs and output payload, and print the path to this file.
 - **FR-013**: A shared Markdown folder MUST exist for discover input/output examples used for mocking at `docs/discover`.
+
+- **FR-014**: Remove the hello-world baseline: delete or refactor away hello-world tests, mocks, greetings, and documentation and `tests/integration/test_hello_world_flow.py` while RETAINING the CLI command names `zte run` and `zte read` with updated semantics.
+- **FR-015**: By default, the CLI and client MUST encode `--payload` as JSON and send with header `Content-Type: application/json`.
+- **FR-016**: The CLI MUST continue to expose `zte run` as the daemon entrypoint (executing the real REST-driven workflow) and `zte read <metric>` for one-off interactive reads of a specific metric via REST.
 
 ### Key Entities *(include if feature involves data)*
 - **Modem Session**: Represents authenticated state with the modem (e.g., cookies/tokens, CSRF if applicable); attributes: authenticated flag, session identifiers, expiry. [NEEDS CLARIFICATION: concrete auth artifacts]
