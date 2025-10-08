@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable
+import os
 from dataclasses import dataclass
+import time
 from typing import Any
 
 import httpx
@@ -18,11 +20,12 @@ def _normalize_host(host: str) -> str:
 
 
 def sha256_hex(value: str) -> str:
-    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+    # Frontend uses uppercase hex digest
+    return hashlib.sha256(value.encode("utf-8")).hexdigest().upper()
 
 
 def md5_hex(value: str) -> str:
-    return hashlib.md5(value.encode("utf-8")).hexdigest()
+    return hashlib.md5(value.encode("utf-8")).hexdigest().upper()
 
 
 class ZTEClientError(RuntimeError):
@@ -76,11 +79,31 @@ class ZTEClient:
             return sha256_hex
         return md5_hex
 
+    def _browser_headers(self, cookie: str | None = None) -> dict[str, str]:
+        headers = {
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": f"{self.base_url}/",
+            "Origin": self.base_url,
+            "Accept-Language": "en-US,en;q=0.9,cs;q=0.8,sk;q=0.7",
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+            ),
+        }
+        ck = cookie if cookie is not None else (self._session.cookie or 'stok=""')
+        headers["Cookie"] = ck
+        return headers
+
     def login(self, password: str, developer: bool = False) -> None:
         handshake_path = "/goform/goform_get_cmd_process"
-        params = {"cmd": "wa_inner_version,cr_version,RD,LD", "multi_data": "1"}
+        params = {"isTest": "false", "cmd": "LD", "_": time.time_ns() // 1000000}
         try:
-            response = self._client.get(handshake_path, params=params)
+            response = self._client.get(
+                handshake_path,
+                params=params,
+                headers=self._browser_headers(),
+            )
             response.raise_for_status()
         except httpx.TimeoutException as exc:  # pragma: no cover - defensive
             raise TimeoutError("Timeout during handshake") from exc
@@ -92,57 +115,46 @@ class ZTEClient:
         except json.JSONDecodeError as exc:
             raise ResponseParseError("Invalid handshake response") from exc
 
-        required_keys = {"wa_inner_version", "cr_version", "RD", "LD"}
+        required_keys = {"LD"}
         if not required_keys.issubset(payload):
             missing = required_keys.difference(payload)
             raise ResponseParseError(f"Handshake missing fields: {', '.join(sorted(missing))}")
 
-        hash_fn = self._choose_hash(payload["wa_inner_version"])
         password_hash = sha256_hex(password)
-        ad = hash_fn(hash_fn(payload["wa_inner_version"] + payload["cr_version"]) + payload["RD"])
         encoded_password = sha256_hex(password_hash + payload["LD"])
+        if os.environ.get("ZTE_DEBUG_AUTH"):
+            print(f"[auth-debug] LD={payload['LD']}")
+            print(f"[auth-debug] sha256(password)={password_hash}")
+            print(f"[auth-debug] salted=sha256(sha256(p)+LD)={encoded_password}")
 
         form_data = {
             "isTest": "false",
-            "goformId": "DEVELOPER_OPTION_LOGIN" if developer else "LOGIN",
+            "goformId": "LOGIN",
             "password": encoded_password,
-            "AD": ad,
         }
 
         try:
             login_response = self._client.post(
                 "/goform/goform_set_cmd_process",
                 data=form_data,
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                headers=self._browser_headers(),
             )
         except httpx.TimeoutException as exc:
             raise TimeoutError("Timeout during login request") from exc
         except httpx.HTTPError as exc:  # pragma: no cover - defensive
             raise RequestError("Login request failed") from exc
-
-        cookie = login_response.headers.get("set-cookie") or login_response.headers.get(
-            "Set-Cookie"
-        )
+        print(login_response.headers)
+        cookie = login_response.headers.get("set-cookie")
         if cookie:
             self._session.cookie = cookie.split(";", 1)[0]
+            self._session.authenticated = True
+            self._session.password_hash = password_hash
+            self._session.plain_password = password
+            return
 
-        try:
-            login_payload = login_response.json()
-        except json.JSONDecodeError as exc:
-            raise ResponseParseError("Invalid login response") from exc
-
-        result_code = login_payload.get("result")
-        if result_code != "0":
-            reason = {
-                "1": "Try again later",
-                "3": "Wrong Password",
-            }.get(result_code, "Unknown error " + result_code)
-            self._session.authenticated = False
-            raise AuthenticationError(f"Authentication failed: {reason}")
-
-        self._session.authenticated = True
-        self._session.password_hash = password_hash
-        self._session.plain_password = password
+        # If still not authenticated, report wrong password
+        self._session.authenticated = False
+        raise AuthenticationError("Authentication failed: Wrong Password")
 
     def request(
         self,
@@ -173,7 +185,7 @@ class ZTEClient:
             raise AuthenticationError("Login required before making requests")
 
         resolved_method = method or ("POST" if payload is not None else "GET")
-        headers = {"Cookie": self._session.cookie}
+        headers = self._browser_headers(self._session.cookie)
         request_kwargs: dict[str, Any] = {"headers": headers}
 
         if resolved_method.upper() == "GET" and payload is not None:
@@ -204,6 +216,7 @@ class ZTEClient:
                     retry_on_auth=False,
                 )
             raise AuthenticationError("Authentication required or expired")
+        print(response.json())
 
         if not response.is_success:
             raise RequestError(f"Unexpected status code: {response.status_code}")
