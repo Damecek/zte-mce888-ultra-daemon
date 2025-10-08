@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from lib.logging_setup import configure_logging, logging_options
+from lib.logging_setup import get_logger, logging_options
 from services.modem_mock import MockModemClient, ModemFixtureError
 from services.mqtt_mock import MockMQTTBroker
 
@@ -61,7 +61,7 @@ def run_command(
 ) -> dict[str, object]:
     """Run the ZTE modem daemon with mocked MQTT publish loop."""
     del device_pass  # not required for mock flow
-    logger = configure_logging(log_level, log_file)
+    logger = get_logger(log_level, log_file)
     logger.info(
         "Starting mocked daemon run",
         extra={"component": "CLI", "context": {"foreground": foreground}},

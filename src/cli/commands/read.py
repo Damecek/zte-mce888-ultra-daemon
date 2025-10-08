@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from lib.logging_setup import configure_logging, logging_options
+from lib.logging_setup import get_logger, logging_options
 from services.modem_mock import MockModemClient, ModemFixtureError
 
 
@@ -19,7 +19,7 @@ Arguments:
 @logging_options(help_text="Log level for stdout output")
 def read_command(metric: str, log_level: str, log_file: str | None) -> str:
     """Read a modem metric from cached telemetry (e.g., RSRP, Provider)."""
-    logger = configure_logging(log_level, log_file)
+    logger = get_logger(log_level, log_file)
     modem = MockModemClient()
     try:
         snapshot = modem.load_snapshot()

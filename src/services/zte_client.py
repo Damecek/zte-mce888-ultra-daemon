@@ -214,6 +214,9 @@ class ZTEClient:
                 headers.setdefault("Content-Type", "application/json")
 
         try:
+            self._logger.debug(
+                f"Performing {resolved_method.upper()} request to {path} with headers {headers}"
+            )
             response = self._client.request(resolved_method.upper(), path, **request_kwargs)
         except httpx.TimeoutException as exc:
             raise TimeoutError("Request timed out") from exc

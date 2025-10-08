@@ -9,7 +9,7 @@ import click
 import httpx
 
 from lib import markdown_io, snapshots
-from lib.logging_setup import configure_logging, logging_options
+from lib.logging_setup import get_logger, logging_options
 from services.zte_client import (
     AuthenticationError,
     RequestError,
@@ -44,15 +44,16 @@ def discover_command(
     log_file: str | None,
 ) -> None:
     effective_method = method.upper() if method else ("POST" if payload else "GET")
-    configure_logging(log_level, log_file)
+    logger = get_logger(log_level, log_file)
 
     try:
         client = ZTEClient(host)
-    except httpx.ConnectError as exc:  # pragma: no cover - defensive: instantiation may not raise
+    except httpx.ConnectError as exc:
         raise click.ClickException(f"Unable to connect to modem host: {exc}") from exc
 
     try:
         client.login(password)
+        logger.debug(f"Logged in to {host}")
         response = client.request(path, method=effective_method, payload=payload, expects="json")
     except httpx.ConnectError as exc:
         raise click.ClickException("Unable to connect to modem host") from exc
