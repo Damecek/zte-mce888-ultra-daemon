@@ -99,7 +99,13 @@ class ZTEClient:
 
     def login(self, password: str, developer: bool = False) -> None:
         handshake_path = "/goform/goform_get_cmd_process"
-        params = {"isTest": "false", "cmd": "LD", "_": time.time_ns() // 1000000}
+        # Fetch all challenge values in a single multi_data=1 request
+        params = {
+            "isTest": "false",
+            "cmd": "wa_inner_version,cr_version,RD,LD",
+            "multi_data": "1",
+            "_": time.time_ns() // 1000000,
+        }
         try:
             response = self._client.get(
                 handshake_path,
@@ -117,13 +123,22 @@ class ZTEClient:
         except json.JSONDecodeError as exc:
             raise ResponseParseError("Invalid handshake response") from exc
 
-        required_keys = {"LD"}
+        required_keys = {"wa_inner_version", "cr_version", "RD", "LD"}
         if not required_keys.issubset(payload):
             missing = required_keys.difference(payload)
             raise ResponseParseError(f"Handshake missing fields: {', '.join(sorted(missing))}")
 
-        password_hash = sha256_hex(password)
-        encoded_password = sha256_hex(password_hash + payload["LD"])
+        inner_version = str(payload["wa_inner_version"])
+        cr_version = str(payload["cr_version"])
+        rd = str(payload["RD"])
+        ld = str(payload["LD"])
+
+        # Hash selection mirrors frontend behavior (MC888/MC889 → SHA256, otherwise MD5)
+        hfunc = self._choose_hash(inner_version)
+
+        password_hash = hfunc(password)
+        encoded_password = hfunc(password_hash + ld)
+        ad_value = hfunc(hfunc(inner_version + cr_version) + rd)
         # Emit auth derivation details only at debug level
         self._logger.debug(
             f"Auth hashing details: LD={payload['LD']} sha256_password={password_hash} salted_hash={encoded_password}"
@@ -133,6 +148,7 @@ class ZTEClient:
             "isTest": "false",
             "goformId": "LOGIN",
             "password": encoded_password,
+            "AD": ad_value,
         }
 
         try:

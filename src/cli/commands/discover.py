@@ -10,13 +10,8 @@ import httpx
 
 from lib import markdown_io, snapshots
 from lib.logging_setup import get_logger, logging_options
-from services.zte_client import (
-    AuthenticationError,
-    RequestError,
-    ResponseParseError,
-    TimeoutError,
-    ZTEClient,
-)
+# Import the module to allow tests to monkeypatch symbols via services.zte_client
+from services import zte_client
 
 
 @click.command(name="discover", help="Invoke modem REST endpoints and capture responses")
@@ -51,7 +46,7 @@ def discover_command(
         logger.debug(f"Payload: {payload}")
 
     try:
-        client = ZTEClient(host)
+        client = zte_client.ZTEClient(host)
     except httpx.ConnectError as exc:
         raise click.ClickException(f"Unable to connect to modem host: {exc}") from exc
 
@@ -61,13 +56,13 @@ def discover_command(
         response = client.request(path, method=effective_method, payload=payload, expects="json")
     except httpx.ConnectError as exc:
         raise click.ClickException("Unable to connect to modem host") from exc
-    except TimeoutError as exc:
+    except zte_client.TimeoutError as exc:
         raise click.ClickException(f"Request timed out: {exc}") from exc
-    except AuthenticationError as exc:
+    except zte_client.AuthenticationError as exc:
         raise click.ClickException(str(exc)) from exc
-    except ResponseParseError as exc:
+    except zte_client.ResponseParseError as exc:
         raise click.ClickException(f"Failed to parse modem response: {exc}") from exc
-    except RequestError as exc:
+    except zte_client.RequestError as exc:
         raise click.ClickException(str(exc)) from exc
 
     if target_file:
