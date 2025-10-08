@@ -62,9 +62,9 @@ def run_command(
     """Run the ZTE modem daemon with mocked MQTT publish loop."""
     del device_pass  # not required for mock flow
     logger = get_logger(log_level, log_file)
+    device_id = _derive_device_id(device_host)
     logger.info(
-        "Starting mocked daemon run",
-        extra={"component": "CLI", "context": {"foreground": foreground}},
+        f"Starting mocked daemon run (foreground={foreground}, device_id={device_id})"
     )
 
     modem = MockModemClient()
@@ -77,17 +77,10 @@ def run_command(
     click.echo(f"Modem snapshot timestamp: {snapshot.timestamp}")
     click.echo(f"RSRP: {snapshot.rsrp} dBm | Provider: {snapshot.provider}")
 
-    broker = MockMQTTBroker(device_id=_derive_device_id(device_host))
+    broker = MockMQTTBroker(device_id=device_id)
     record = broker.publish(snapshot, topic=mqtt_topic, broker_host=mqtt_host)
     logger.info(
-        "Recorded MQTT payload to mock broker",
-        extra={
-            "component": "MQTTMock",
-            "context": {
-                "topic": mqtt_topic,
-                "broker_host": mqtt_host or "mock-default",
-            },
-        },
+        f"Recorded MQTT payload to mock broker (topic={mqtt_topic}, broker={mqtt_host or 'mock-default'})"
     )
     click.echo("Recorded MQTT payload to mock broker for offline inspection.")
 

@@ -34,9 +34,8 @@ def read_command(metric: str, log_level: str, log_file: str | None) -> str:
 
     display_key = canonical[normalized]
     value = metric_map[display_key]
-    logger.info(
-        "Read metric from cached snapshot",
-        extra={"component": "CLI", "context": {"metric": display_key}},
-    )
+    logger.info(f"Read metric from cached snapshot: {display_key}")
+    if log_level.lower() == "debug":
+        logger.debug(f"Metric value: {display_key}={value}")
     click.echo(f"{display_key}: {value}")
     return display_key

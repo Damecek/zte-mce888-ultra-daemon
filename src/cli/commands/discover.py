@@ -46,6 +46,10 @@ def discover_command(
     effective_method = method.upper() if method else ("POST" if payload else "GET")
     logger = get_logger(log_level, log_file)
 
+    logger.info(f"Starting discovery: host={host} path={path} method={effective_method}")
+    if payload is not None and log_level.lower() == "debug":
+        logger.debug(f"Payload: {payload}")
+
     try:
         client = ZTEClient(host)
     except httpx.ConnectError as exc:
@@ -76,6 +80,7 @@ def discover_command(
             payload=payload,
             response=response,
         )
+        logger.info(f"Wrote discovery example: {target_path}")
         snapshots.save_snapshot(
             target_path.parent,
             name=target_path.stem,
@@ -87,6 +92,7 @@ def discover_command(
             },
             response=response,
         )
+        # Keep logs simple; no additional debug context
         click.echo(str(target_path))
         return
 

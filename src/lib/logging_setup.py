@@ -1,15 +1,15 @@
 """Central logging configuration for CLI and services.
 
-Adds a structured JSON logger compatible with the prior
-`zte_daemon.logging.config.configure_logging` API while preserving the
-simple `configure()` helper already used by the new code.
+Provides a simple, structured formatter and convenience helpers that the
+Click commands can use. The formatter emits a consistent, readable line
+including optional context key=value pairs so important fields (e.g.,
+``topic=...``) are visible in logs.
 """
 
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
 
 _CONFIGURED = False
 
@@ -28,22 +28,16 @@ def configure(level: int = logging.INFO, handler: logging.Handler | None = None)
 
 
 class StructuredFormatter(logging.Formatter):
-    """Emit structured JSON log lines."""
+    """Emit simple, readable log lines.
+
+    Output format:
+      ``<ts> <LEVEL> <component>: <message>``
+    """
 
     def format(self, record: logging.LogRecord) -> str:  # noqa: D401 - short override
-        payload: dict[str, Any] = {
-            "timestamp": self.formatTime(record),
-            "level": record.levelname,
-            "component": getattr(record, "component", "CLI"),
-            "message": record.getMessage(),
-        }
-        if record.args and isinstance(record.args, dict):
-            payload["context"] = record.args
-        elif hasattr(record, "context"):
-            context = getattr(record, "context")
-            if isinstance(context, dict):
-                payload["context"] = context
-        return f"{payload.get('timestamp')} {payload.get('level')} {payload.get('component')}: {payload.get('message')}"
+        timestamp = self.formatTime(record)
+        component = record.name.split(".")[-1]
+        return f"{timestamp} {record.levelname} {component}: {record.getMessage()}"
 
 
 _LEVEL_ALIASES: dict[str, int] = {

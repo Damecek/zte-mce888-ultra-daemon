@@ -126,15 +126,7 @@ class ZTEClient:
         encoded_password = sha256_hex(password_hash + payload["LD"])
         # Emit auth derivation details only at debug level
         self._logger.debug(
-            "Auth hashing details",
-            extra={
-                "component": "Auth",
-                "context": {
-                    "LD": payload["LD"],
-                    "sha256_password": password_hash,
-                    "salted_hash": encoded_password,
-                },
-            },
+            f"Auth hashing details: LD={payload['LD']} sha256_password={password_hash} salted_hash={encoded_password}"
         )
 
         form_data = {
@@ -154,11 +146,7 @@ class ZTEClient:
         except httpx.HTTPError as exc:  # pragma: no cover - defensive
             raise RequestError("Login request failed") from exc
         self._logger.debug(
-            "Login response headers",
-            extra={
-                "component": "Auth",
-                "context": {"set_cookie": login_response.headers.get("set-cookie", "")},
-            },
+            f"Login response headers: set_cookie={login_response.headers.get('set-cookie', '')}"
         )
         cookie = login_response.headers.get("set-cookie")
         if cookie:
