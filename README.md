@@ -1,6 +1,6 @@
-# ZTE MC888 Ultra Daemon (Hello World)
+# ZTE MC888 Ultra Daemon
 
-This repository contains a mocked hello-world experience for the ZTE MC888 Ultra daemon. It ships a Click-based `zte` CLI with
+This repository contains a developer-oriented CLI for the ZTE MC888 Ultra daemon. It ships a Click-based `zte` CLI with
 `run`, `read`, and `discover` commands, structured logging, modem telemetry fixtures, and a mock MQTT broker so developers can
 practice the workflow without live hardware.
 
@@ -23,8 +23,8 @@ uv run zte run --device-pass secret --foreground --log warn --log-file ./logs/zt
   --mqtt-host 192.168.0.50:8080 --mqtt-topic zte-modem
 ```
 
-The `run` command reads the latest modem snapshot from `tests/fixtures/modem/latest.json`, prints a friendly greeting, and stores
-a mocked MQTT publish in `logs/mqtt-mock.jsonl`.
+The `run` command reads the latest modem snapshot from `tests/fixtures/modem/latest.json` and stores
+ a mocked MQTT publish in `logs/mqtt-mock.jsonl`. Optionally, you can exercise a minimal REST client login using `--rest-test`.
 
 To inspect individual telemetry metrics:
 

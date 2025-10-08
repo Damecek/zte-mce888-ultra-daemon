@@ -26,7 +26,7 @@
   - Add dependency in `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/pyproject.toml`
 - [X] T003 [P] Ensure docs/discover exists for example files
   - Create directory: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/discover`
-- [ ] T004 Remove hello-world baseline artifacts but retain command names
+- [X] T004 Remove hello-world baseline artifacts but retain command names
   - Delete: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/integration/test_hello_world_flow.py`
   - Remove hello greeting from: `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/cli/commands/run.py`
   - Update README title and sections to remove "Hello World" at `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/README.md`
@@ -86,9 +86,9 @@
   - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/models/metrics.py` aligned with data-model.md
 - [X] T016 Document metrics in Markdown
   - Add `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/docs/metrics.md` enumerating LTE/5G metrics, provider/cell, neighbors, connection, bands, WAN IP, temps (A/M/P)
-- [ ] T022 Refactor CLI: `zte read` to use REST client
+- [X] T022 Refactor CLI: `zte read` to use REST client
   - Update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/cli/commands/read.py` to fetch a specific metric
-- [ ] T023 Refactor CLI: `zte run` to orchestrate a minimal fetch cycle
+- [X] T023 Refactor CLI: `zte run` to orchestrate a minimal fetch cycle
   - Update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/src/zte_daemon/cli/commands/run.py` to call the REST client (test mode)
 
 ## Phase 3.4: Integration
@@ -141,4 +141,3 @@ Task: "pytest /Users/adam/IdeaProjects/zte-mc888-ultra-deamon/tests/contract/tes
 - [X] All tests precede implementation
 - [X] Parallel tasks are independent and include absolute file paths
 - [X] No two [P] tasks modify the same file
-

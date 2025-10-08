@@ -41,7 +41,6 @@ def test_run_command_emits_greeting_and_records_publish(tmp_path: Path, runner: 
 
     assert result.exit_code == 0
     output = result.output
-    assert "Hello from the ZTE MC888 Ultra mock daemon!" in output
     assert "Modem snapshot timestamp: 2025-10-06T10:00:00Z" in output
     assert "Recorded MQTT payload to mock broker" in output
     record = get_last_record()

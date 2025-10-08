@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "zte-daemon"
 version = "0.1.0"
-description = "Mocked hello-world CLI for the ZTE MC888 Ultra daemon"
+description = "Developer CLI and mocked workflows for the ZTE MC888 Ultra daemon"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

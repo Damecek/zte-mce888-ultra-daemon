@@ -5,6 +5,7 @@ from __future__ import annotations
 import click
 
 from lib.logging_setup import get_logger, logging_options
+from services import zte_client
 from services.modem_mock import MockModemClient, ModemFixtureError
 from services.mqtt_mock import MockMQTTBroker
 
@@ -47,6 +48,13 @@ def _derive_device_id(device_host: str) -> str:
 )
 @click.option("mqtt_user", "--mqtt-user", help="MQTT username placeholder.")
 @click.option("mqtt_password", "--mqtt-password", help="MQTT password placeholder (never logged).")
+@click.option(
+    "rest_test",
+    "--rest-test",
+    is_flag=True,
+    default=False,
+    help="Attempt a minimal REST client login + fetch before mock publish (test mode).",
+)
 def run_command(
     *,
     device_host: str,
@@ -58,14 +66,29 @@ def run_command(
     mqtt_topic: str,
     mqtt_user: str | None,
     mqtt_password: str | None,
+    rest_test: bool,
 ) -> dict[str, object]:
     """Run the ZTE modem daemon with mocked MQTT publish loop."""
-    del device_pass  # not required for mock flow
     logger = get_logger(log_level, log_file)
     device_id = _derive_device_id(device_host)
     logger.info(
         f"Starting mocked daemon run (foreground={foreground}, device_id={device_id})"
     )
+
+    # Optional: exercise REST client in a minimal way for test-mode verification
+    if rest_test:
+        try:
+            client = zte_client.ZTEClient(f"http://{device_host}")
+            client.login(device_pass)
+            # Lightweight GET against a benign endpoint to verify session
+            client.request(
+                "/goform/goform_get_cmd_process?isTest=false&cmd=lan_station_list",
+                method="GET",
+                expects="json",
+            )
+            logger.info("REST client test-mode fetch succeeded")
+        except zte_client.ZTEClientError as exc:
+            raise click.ClickException(f"REST test-mode failed: {exc}") from exc
 
     modem = MockModemClient()
     try:
@@ -73,7 +96,6 @@ def run_command(
     except ModemFixtureError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    click.echo("Hello from the ZTE MC888 Ultra mock daemon!")
     click.echo(f"Modem snapshot timestamp: {snapshot.timestamp}")
     click.echo(f"RSRP: {snapshot.rsrp} dBm | Provider: {snapshot.provider}")
 
