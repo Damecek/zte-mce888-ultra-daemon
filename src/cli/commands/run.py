@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from lib.logging_setup import configure_logging
+from lib.logging_setup import configure_logging, logging_options
 from services.modem_mock import MockModemClient, ModemFixtureError
 from services.mqtt_mock import MockMQTTBroker
 
@@ -27,26 +27,13 @@ def _derive_device_id(device_host: str) -> str:
     required=True,
     help="Password used for modem REST authentication",
 )
-@click.option(
-    "log_level",
-    "--log",
-    type=click.Choice(["debug", "info", "warn", "error"], case_sensitive=False),
-    default="info",
-    show_default=True,
-    help="Log level for stdout and file handlers",
-)
+@logging_options(help_text="Log level for stdout and file handlers")
 @click.option(
     "foreground",
     "--foreground",
     is_flag=True,
     default=False,
     help="Run in foreground (runs in background by default).",
-)
-@click.option(
-    "log_file",
-    "--log-file",
-    type=click.Path(path_type=str),
-    help="Optional log file destination (ensures parent dir exists).",
 )
 @click.option(
     "mqtt_host", "--mqtt-host", help="Placeholder broker address (stored but not contacted)."

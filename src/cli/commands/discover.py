@@ -9,6 +9,7 @@ import click
 import httpx
 
 from lib import markdown_io, snapshots
+from lib.logging_setup import configure_logging, logging_options
 from services.zte_client import (
     AuthenticationError,
     RequestError,
@@ -31,6 +32,7 @@ from services.zte_client import (
 @click.option(
     "--target-file", type=click.Path(path_type=Path), help="Write Markdown example to this file"
 )
+@logging_options(help_text="Log level for stdout output")
 def discover_command(
     host: str,
     password: str,
@@ -38,8 +40,11 @@ def discover_command(
     payload: str | None,
     method: str | None,
     target_file: Path | None,
+    log_level: str,
+    log_file: str | None,
 ) -> None:
     effective_method = method.upper() if method else ("POST" if payload else "GET")
+    configure_logging(log_level, log_file)
 
     try:
         client = ZTEClient(host)

@@ -51,7 +51,6 @@ _LEVEL_ALIASES: dict[str, int] = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
     "warn": logging.WARNING,
-    "warning": logging.WARNING,
     "error": logging.ERROR,
 }
 
@@ -90,3 +89,50 @@ def configure_logging(level: str = "info", log_file: str | Path | None = None) -
 
 
 __all__ = ["configure", "configure_logging", "StructuredFormatter"]
+
+
+# Click integration helpers
+try:  # Import guarded to avoid hard dependency at import time
+    import click
+except Exception:  # pragma: no cover - defensive fallback for non-CLI contexts
+    click = None  # type: ignore
+
+
+def logging_options(*, help_text: str = "Log level for stdout and file handlers"):
+    """Reusable Click options for ``--log`` and ``--log-file``.
+
+    Apply as a decorator above ``@click.command`` or directly above the command function.
+    Example:
+
+        @click.command()
+        @logging_options(help_text="Log level for stdout output")
+        def cmd(log_level, log_file): ...
+    """
+    if click is None:  # pragma: no cover - import guard
+
+        def passthrough(func):
+            return func
+
+        return passthrough
+
+    def decorator(func):  # type: ignore[override]
+        func = click.option(
+            "log_file",
+            "--log-file",
+            type=click.Path(path_type=str),
+            help="Optional log file destination (ensures parent dir exists).",
+        )(func)
+        func = click.option(
+            "log_level",
+            "--log",
+            type=click.Choice(["debug", "info", "warn", "error"], case_sensitive=False),
+            default="info",
+            show_default=True,
+            help=help_text,
+        )(func)
+        return func
+
+    return decorator
+
+
+__all__.append("logging_options")

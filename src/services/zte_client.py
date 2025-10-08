@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable
-import os
+import logging
 from dataclasses import dataclass
 import time
 from typing import Any
@@ -70,6 +70,8 @@ class ZTEClient:
         self._timeout = timeout
         self._client = httpx.Client(base_url=self.base_url, timeout=timeout, transport=transport)
         self._session = SessionState()
+        # Child logger under the app namespace so CLI config picks it up
+        self._logger = logging.getLogger("zte_daemon.zte_client")
 
     def close(self) -> None:
         self._client.close()
@@ -122,10 +124,18 @@ class ZTEClient:
 
         password_hash = sha256_hex(password)
         encoded_password = sha256_hex(password_hash + payload["LD"])
-        if os.environ.get("ZTE_DEBUG_AUTH"):
-            print(f"[auth-debug] LD={payload['LD']}")
-            print(f"[auth-debug] sha256(password)={password_hash}")
-            print(f"[auth-debug] salted=sha256(sha256(p)+LD)={encoded_password}")
+        # Emit auth derivation details only at debug level
+        self._logger.debug(
+            "Auth hashing details",
+            extra={
+                "component": "Auth",
+                "context": {
+                    "LD": payload["LD"],
+                    "sha256_password": password_hash,
+                    "salted_hash": encoded_password,
+                },
+            },
+        )
 
         form_data = {
             "isTest": "false",
@@ -143,7 +153,13 @@ class ZTEClient:
             raise TimeoutError("Timeout during login request") from exc
         except httpx.HTTPError as exc:  # pragma: no cover - defensive
             raise RequestError("Login request failed") from exc
-        print(login_response.headers)
+        self._logger.debug(
+            "Login response headers",
+            extra={
+                "component": "Auth",
+                "context": {"set_cookie": login_response.headers.get("set-cookie", "")},
+            },
+        )
         cookie = login_response.headers.get("set-cookie")
         if cookie:
             self._session.cookie = cookie.split(";", 1)[0]

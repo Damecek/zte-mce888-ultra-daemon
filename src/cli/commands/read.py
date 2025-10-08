@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from lib.logging_setup import configure_logging
+from lib.logging_setup import configure_logging, logging_options
 from services.modem_mock import MockModemClient, ModemFixtureError
 
 
@@ -16,20 +16,7 @@ Arguments:
   METRIC  Metric name (RSRP, Provider)""",
 )
 @click.argument("metric", metavar="METRIC")
-@click.option(
-    "log_level",
-    "--log",
-    type=click.Choice(["debug", "info", "warn", "error"], case_sensitive=False),
-    default="info",
-    show_default=True,
-    help="Log level for stdout output",
-)
-@click.option(
-    "log_file",
-    "--log-file",
-    type=click.Path(path_type=str),
-    help="Optional log file destination (ensures parent dir exists).",
-)
+@logging_options(help_text="Log level for stdout output")
 def read_command(metric: str, log_level: str, log_file: str | None) -> str:
     """Read a modem metric from cached telemetry (e.g., RSRP, Provider)."""
     logger = configure_logging(log_level, log_file)
