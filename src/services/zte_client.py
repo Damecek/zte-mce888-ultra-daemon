@@ -216,7 +216,6 @@ class ZTEClient:
                     retry_on_auth=False,
                 )
             raise AuthenticationError("Authentication required or expired")
-        print(response.json())
 
         if not response.is_success:
             raise RequestError(f"Unexpected status code: {response.status_code}")
