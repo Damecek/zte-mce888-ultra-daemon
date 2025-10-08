@@ -7,7 +7,6 @@ simple `configure()` helper already used by the new code.
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -44,7 +43,7 @@ class StructuredFormatter(logging.Formatter):
             context = getattr(record, "context")
             if isinstance(context, dict):
                 payload["context"] = context
-        return json.dumps(payload, ensure_ascii=False)
+        return f"{payload.get('timestamp')} {payload.get('level')} {payload.get('component')}: {payload.get('message')}"
 
 
 _LEVEL_ALIASES: dict[str, int] = {
@@ -55,7 +54,7 @@ _LEVEL_ALIASES: dict[str, int] = {
 }
 
 
-def configure_logging(level: str = "info", log_file: str | Path | None = None) -> logging.Logger:
+def get_logger(level: str = "info", log_file: str | Path | None = None) -> logging.Logger:
     """Configure application-wide structured logging and return the logger.
 
     Compatible wrapper kept for commands migrated from the legacy package.
@@ -88,7 +87,7 @@ def configure_logging(level: str = "info", log_file: str | Path | None = None) -
     return logger
 
 
-__all__ = ["configure", "configure_logging", "StructuredFormatter"]
+__all__ = ["configure", "get_logger", "StructuredFormatter"]
 
 
 # Click integration helpers
