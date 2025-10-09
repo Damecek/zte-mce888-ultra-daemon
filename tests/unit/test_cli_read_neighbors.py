@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+
 from click.testing import CliRunner
 
 from cli.zte import cli
@@ -108,4 +109,3 @@ def test_read_neighbors_selector_errors(monkeypatch) -> None:
     )
     assert res_sel.exit_code != 0
     assert "unsupported neighbors selector" in res_sel.output.lower()
-

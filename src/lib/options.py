@@ -46,4 +46,3 @@ def router_options(*, default_host: str = "192.168.0.1"):
 
 
 __all__ = ["router_options"]
-

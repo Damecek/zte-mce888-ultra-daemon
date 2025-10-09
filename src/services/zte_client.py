@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable
 import logging
-from dataclasses import dataclass
 import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -161,9 +161,7 @@ class ZTEClient:
             raise TimeoutError("Timeout during login request") from exc
         except httpx.HTTPError as exc:  # pragma: no cover - defensive
             raise RequestError("Login request failed") from exc
-        self._logger.debug(
-            f"Login response headers: set_cookie={login_response.headers.get('set-cookie', '')}"
-        )
+        self._logger.debug(f"Login response headers: set_cookie={login_response.headers.get('set-cookie', '')}")
         cookie = login_response.headers.get("set-cookie")
         if cookie:
             self._session.cookie = cookie.split(";", 1)[0]
@@ -218,9 +216,7 @@ class ZTEClient:
                 headers.setdefault("Content-Type", "application/json")
 
         try:
-            self._logger.debug(
-                f"Performing {resolved_method.upper()} request to {path} with headers {headers}"
-            )
+            self._logger.debug(f"Performing {resolved_method.upper()} request to {path} with headers {headers}")
             response = self._client.request(resolved_method.upper(), path, **request_kwargs)
         except httpx.TimeoutException as exc:
             raise TimeoutError("Request timed out") from exc

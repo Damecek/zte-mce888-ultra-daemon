@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import datetime
+
 try:  # Python < 3.11 fallback
     from datetime import UTC  # type: ignore
 except Exception:  # pragma: no cover - compatibility path for running script on older Pythons
-    UTC = timezone.utc  # type: ignore
+    UTC = UTC  # type: ignore
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -53,9 +54,7 @@ class MockMQTTBroker:
             },
         }
 
-    def publish(
-        self, snapshot: ModemSnapshot, *, topic: str, broker_host: str | None
-    ) -> PublishRecord:
+    def publish(self, snapshot: ModemSnapshot, *, topic: str, broker_host: str | None) -> PublishRecord:
         payload = self.build_payload(snapshot)
         note = (
             "Recorded publish to mock broker defaults"

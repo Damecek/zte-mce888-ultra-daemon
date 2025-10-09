@@ -24,4 +24,3 @@ def test_save_snapshot_creates_timestamped_file(tmp_path: Path) -> None:
     assert "captured_at" in data and isinstance(data["captured_at"], str)
     assert data["request"]["method"] == "GET"
     assert data["response"] == {"stations": []}
-

@@ -35,15 +35,11 @@ def load_latest_snapshot(path: Path | None = None) -> ModemSnapshot:
     """Load the latest modem snapshot fixture."""
     fixture_path = path or LATEST_FIXTURE
     if not fixture_path.exists():
-        raise FixtureError(
-            "Modem fixture not found. Capture a payload under tests/fixtures/modem/latest.json"
-        )
+        raise FixtureError("Modem fixture not found. Capture a payload under tests/fixtures/modem/latest.json")
     try:
         payload = json.loads(fixture_path.read_text())
     except json.JSONDecodeError as exc:
-        raise FixtureError(
-            "Malformed modem fixture JSON. Validate the capture file before running tests."
-        ) from exc
+        raise FixtureError("Malformed modem fixture JSON. Validate the capture file before running tests.") from exc
 
     signal = payload.get("signal", {})
     return ModemSnapshot(

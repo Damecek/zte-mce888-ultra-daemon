@@ -15,9 +15,7 @@ def test_discover_defaults_to_get_when_no_payload(monkeypatch):
         def login(self, password: str) -> None:
             calls["password"] = password
 
-        def request(
-            self, path: str, method: str, payload: str | None = None, expects: str = "json"
-        ):
+        def request(self, path: str, method: str, payload: str | None = None, expects: str = "json"):
             calls["path"] = path
             calls["method"] = method
             calls["payload"] = payload

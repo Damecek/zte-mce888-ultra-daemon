@@ -27,9 +27,7 @@ def _derive_device_id(host: str) -> str:
     default=False,
     help="Run in foreground (runs in background by default).",
 )
-@click.option(
-    "mqtt_host", "--mqtt-host", help="Placeholder broker address (stored but not contacted)."
-)
+@click.option("mqtt_host", "--mqtt-host", help="Placeholder broker address (stored but not contacted).")
 @click.option(
     "mqtt_topic",
     "--mqtt-topic",
@@ -62,9 +60,7 @@ def run_command(
     """Run the ZTE router daemon with mocked MQTT publish loop."""
     logger = get_logger(log_level, log_file)
     device_id = _derive_device_id(router_host)
-    logger.info(
-        f"Starting mocked daemon run (foreground={foreground}, device_id={device_id})"
-    )
+    logger.info(f"Starting mocked daemon run (foreground={foreground}, device_id={device_id})")
 
     # Optional: exercise REST client in a minimal way for test-mode verification
     if rest_test:
@@ -92,9 +88,7 @@ def run_command(
 
     broker = MockMQTTBroker(device_id=device_id)
     record = broker.publish(snapshot, topic=mqtt_topic, broker_host=mqtt_host)
-    logger.info(
-        f"Recorded MQTT payload to mock broker (topic={mqtt_topic}, broker={mqtt_host or 'mock-default'})"
-    )
+    logger.info(f"Recorded MQTT payload to mock broker (topic={mqtt_topic}, broker={mqtt_host or 'mock-default'})")
     click.echo("Recorded MQTT payload to mock broker for offline inspection.")
 
     return {

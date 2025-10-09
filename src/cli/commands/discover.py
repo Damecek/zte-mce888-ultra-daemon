@@ -11,6 +11,7 @@ import httpx
 from lib import markdown_io, snapshots
 from lib.logging_setup import get_logger, logging_options
 from lib.options import router_options
+
 # Import the module to allow tests to monkeypatch symbols via services.zte_client
 from services import zte_client
 
@@ -24,9 +25,7 @@ from services import zte_client
     type=click.Choice(["GET", "POST"], case_sensitive=False),
     help="Override HTTP method",
 )
-@click.option(
-    "--target-file", type=click.Path(path_type=Path), help="Write Markdown example to this file"
-)
+@click.option("--target-file", type=click.Path(path_type=Path), help="Write Markdown example to this file")
 @logging_options(help_text="Log level for stdout output")
 def discover_command(
     router_host: str,

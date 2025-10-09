@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from click.testing import CliRunner
 
@@ -47,4 +47,3 @@ def main() -> Path:
 if __name__ == "__main__":
     out = main()
     print(f"Wrote CLI docs to: {out}")
-

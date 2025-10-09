@@ -20,6 +20,7 @@ def cli() -> None:
     """Root CLI group."""
     logging_setup.configure()
 
+
 cli.add_command(discover_command)
 cli.add_command(run_command)
 cli.add_command(read_command)

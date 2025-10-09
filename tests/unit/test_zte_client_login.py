@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import json
+import hashlib
 
 import httpx
 import pytest
 
 from services import zte_client
-import hashlib
 
 
 def test_hash_helpers_produce_expected_hex() -> None:

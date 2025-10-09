@@ -1,7 +1,6 @@
 """Implementation of the `zte read` command (flattened src layout)."""
 
 from __future__ import annotations
-from multiprocessing import Lock
 
 import click
 
@@ -157,10 +156,12 @@ def read_command(
                 neighbors = _parse_neighbors(raw)
                 if ident_norm == "neighbors":
                     import json as _json
+
                     click.echo(_json.dumps(neighbors))
                     return ident
 
                 import re as _re
+
                 m = _re.fullmatch(r"neighbors\[(\d+)\](?:\.(\w+))?", ident_norm)
                 if not m:
                     raise click.ClickException(
@@ -169,18 +170,15 @@ def read_command(
                 idx = int(m.group(1))
                 field = m.group(2)
                 if idx < 0 or idx >= len(neighbors):
-                    raise click.ClickException(
-                        f"Neighbor index out of range: {idx} (available: {len(neighbors)})"
-                    )
+                    raise click.ClickException(f"Neighbor index out of range: {idx} (available: {len(neighbors)})")
                 item = neighbors[idx]
                 if field:
                     if field not in item:
-                        raise click.ClickException(
-                            f"Unknown neighbor field: {field}. Available: {sorted(item.keys())}"
-                        )
+                        raise click.ClickException(f"Unknown neighbor field: {field}. Available: {sorted(item.keys())}")
                     click.echo(f"{item[field]}")
                     return ident
                 import json as _json
+
                 click.echo(_json.dumps(item))
                 return ident
 
@@ -192,9 +190,7 @@ def read_command(
                 )
             live_value = data.get(json_key)
             if live_value is None:
-                raise click.ClickException(
-                    f"No value for '{ident}' in router response (missing '{json_key}')."
-                )
+                raise click.ClickException(f"No value for '{ident}' in router response (missing '{json_key}').")
             click.echo(f"{ident}: {live_value}")
             return ident
         except zte_client.ZTEClientError as exc:
@@ -209,8 +205,7 @@ def read_command(
     ok, value = read_from_mock_payload(snapshot.raw_payload)
     if not ok:
         raise click.ClickException(
-            "Unknown metric identifier for mock data. Supported examples: "
-            "lte.rsrp1, nr5g.sinr, provider, wan_ip"
+            "Unknown metric identifier for mock data. Supported examples: lte.rsrp1, nr5g.sinr, provider, wan_ip"
         )
 
     logger.info(f"Read metric from cached snapshot: {ident}")

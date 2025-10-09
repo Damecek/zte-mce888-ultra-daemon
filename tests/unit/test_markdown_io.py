@@ -41,4 +41,4 @@ def test_write_discover_example_accepts_scalar_payload(tmp_path: Path) -> None:
     text = target.read_text()
     # Null payload prints as JSON null inside fenced block
     assert "\nnull\n" in text or '"payload": null' in text
-    assert '```json' in text and '```' in text[-4:]
+    assert "```json" in text and "```" in text[-4:]

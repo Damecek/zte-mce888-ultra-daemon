@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
+
 try:  # Python < 3.11 fallback for UTC constant
     from datetime import UTC  # type: ignore
 except Exception:  # pragma: no cover - compatibility path for running script on older Pythons
-    UTC = timezone.utc  # type: ignore
+    UTC = UTC  # type: ignore
 from pathlib import Path
 from typing import Any
 

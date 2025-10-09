@@ -57,4 +57,3 @@ def test_discover_relative_target_writes_markdown_and_snapshot(monkeypatch) -> N
         snap = json.loads(snapshots[-1].read_text())
         assert snap["request"]["method"] in {"GET", "POST"}
         assert snap["response"]["status"] == "ok"
-
