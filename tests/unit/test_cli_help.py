@@ -22,11 +22,7 @@ def test_top_level_help_includes_commands(runner: CliRunner) -> None:
         output,
         flags=re.M,
     )
-    assert re.search(
-        r"^\s*read\s+Read a modem metric from cached telemetry \(e\.g\., RSRP, Provider\)\.",
-        output,
-        flags=re.M,
-    )
+    assert re.search(r"^\s*read\s+Read a modem metric by identifier\.", output, flags=re.M)
 
 
 def test_run_command_help_matches_contract(runner: CliRunner) -> None:
@@ -64,4 +60,4 @@ def test_read_command_help_matches_contract(runner: CliRunner) -> None:
     output = result.output
     assert "Usage: zte read [OPTIONS] METRIC" in output
     assert "METRIC" in output
-    assert "Metric name (RSRP, Provider)" in output
+    assert "Metric identifier (e.g., lte.rsrp1, nr5g.pci, wan_ip)." in output
