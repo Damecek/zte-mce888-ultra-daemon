@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+try:  # Python < 3.11 fallback
+    from datetime import UTC  # type: ignore
+except Exception:  # pragma: no cover - compatibility path for running script on older Pythons
+    UTC = timezone.utc  # type: ignore
 from pathlib import Path
 from typing import Any, ClassVar
 

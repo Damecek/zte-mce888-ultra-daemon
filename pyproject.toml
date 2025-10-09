@@ -29,6 +29,7 @@ addopts = "-ra"
 
 [project.scripts]
 zte = "cli.zte:cli"
+zte-cli-docs = "tools.cli_docs:main"
 
 [tool.ruff]
 # Keep lines readable and match our Python version
