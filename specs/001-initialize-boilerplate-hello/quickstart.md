@@ -42,7 +42,7 @@ uv run pytest
 - Use `uv run pytest tests/unit -k cli` for focused development.
 
 ## Observability
-- Logging level configured with `--log` flag; defaults to `INFO` if omitted.
+- Logging level configured with `--log` flag; defaults to `WARN` if omitted.
 - Mock MQTT publishes recorded with timestamp, topic, payload, and publish outcome for deterministic inspection.
 
 ## Cleanup

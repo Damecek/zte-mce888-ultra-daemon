@@ -14,7 +14,7 @@ from pathlib import Path
 _CONFIGURED = False
 
 
-def configure(level: int = logging.INFO, handler: logging.Handler | None = None) -> None:
+def configure(level: int = logging.WARNING, handler: logging.Handler | None = None) -> None:
     global _CONFIGURED
     if _CONFIGURED:
         return
@@ -48,12 +48,12 @@ _LEVEL_ALIASES: dict[str, int] = {
 }
 
 
-def get_logger(level: str = "info", log_file: str | Path | None = None) -> logging.Logger:
+def get_logger(level: str = "warn", log_file: str | Path | None = None) -> logging.Logger:
     """Configure application-wide structured logging and return the logger.
 
     Compatible wrapper kept for commands migrated from the legacy package.
     """
-    resolved_level = _LEVEL_ALIASES.get(level.lower(), logging.INFO)
+    resolved_level = _LEVEL_ALIASES.get(level.lower(), logging.WARNING)
     logger = logging.getLogger("zte_daemon")
     logger.setLevel(resolved_level)
 
@@ -78,6 +78,20 @@ def get_logger(level: str = "info", log_file: str | Path | None = None) -> loggi
         logger.addHandler(file_handler)
 
     logger.propagate = False
+
+    # Tame noisy third-party libraries based on desired verbosity.
+    for name in ("httpx", "httpcore", "urllib3"):
+        ext_logger = logging.getLogger(name)
+        ext_logger.setLevel(resolved_level)
+        # Allow these to propagate to root handlers if present
+        # so basicConfig formatting applies, but level gates noise.
+        ext_logger.propagate = True
+
+    # Also align the root logger level with the chosen app level
+    # while keeping its default handlers/formatting from basicConfig.
+    root_logger = logging.getLogger()
+    root_logger.setLevel(resolved_level)
+
     return logger
 
 
@@ -119,7 +133,7 @@ def logging_options(*, help_text: str = "Log level for stdout and file handlers"
             "log_level",
             "--log",
             type=click.Choice(["debug", "info", "warn", "error"], case_sensitive=False),
-            default="info",
+            default="warn",
             show_default=True,
             help=help_text,
         )(func)

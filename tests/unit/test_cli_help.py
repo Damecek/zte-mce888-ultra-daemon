@@ -38,7 +38,7 @@ def test_run_command_help_matches_contract(runner: CliRunner) -> None:
     assert "[required]" in output
     assert "--log [debug|info|warn|error]" in output
     assert "Log level for stdout and file handlers" in output
-    assert "[default: info]" in output
+    assert "[default: warn]" in output
     assert "--foreground" in output
     assert "Run in foreground (runs in background" in output
     assert "--log-file PATH" in output
