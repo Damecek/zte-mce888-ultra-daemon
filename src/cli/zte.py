@@ -1,4 +1,4 @@
-"""Click CLI exposing modem discovery utilities."""
+"""Click CLI exposing router discovery utilities."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from lib import (
 )
 
 
-@click.group(name="zte", help="ZTE MC888 modem utilities")
+@click.group(name="zte", help="ZTE MC888 router utilities")
 @click.version_option(message="%(version)s")
 def cli() -> None:
     """Root CLI group."""

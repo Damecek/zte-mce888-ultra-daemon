@@ -28,9 +28,9 @@ def test_discover_defaults_to_post_when_payload_present(monkeypatch):
         cli_module.cli,
         [
             "discover",
-            "--host",
+            "--router-host",
             "http://192.168.0.1",
-            "--password",
+            "--router-password",
             "secret",
             "--path",
             "goform/test",

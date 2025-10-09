@@ -10,13 +10,13 @@ import httpx
 
 from lib import markdown_io, snapshots
 from lib.logging_setup import get_logger, logging_options
+from lib.options import router_options
 # Import the module to allow tests to monkeypatch symbols via services.zte_client
 from services import zte_client
 
 
-@click.command(name="discover", help="Invoke modem REST endpoints and capture responses")
-@click.option("--host", default="http://192.168.0.1", show_default=True, help="Modem host URL")
-@click.option("--password", required=True, help="Admin password")
+@click.command(name="discover", help="Invoke router REST endpoints and capture responses")
+@router_options(default_host="http://192.168.0.1")
 @click.option("--path", required=True, help="Relative endpoint path")
 @click.option("--payload", help="Optional payload (JSON string)")
 @click.option(
@@ -29,8 +29,8 @@ from services import zte_client
 )
 @logging_options(help_text="Log level for stdout output")
 def discover_command(
-    host: str,
-    password: str,
+    router_host: str,
+    router_password: str,
     path: str,
     payload: str | None,
     method: str | None,
@@ -41,27 +41,27 @@ def discover_command(
     effective_method = method.upper() if method else ("POST" if payload else "GET")
     logger = get_logger(log_level, log_file)
 
-    logger.info(f"Starting discovery: host={host} path={path} method={effective_method}")
+    logger.info(f"Starting discovery: host={router_host} path={path} method={effective_method}")
     if payload is not None and log_level.lower() == "debug":
         logger.debug(f"Payload: {payload}")
 
     try:
-        client = zte_client.ZTEClient(host)
+        client = zte_client.ZTEClient(router_host)
     except httpx.ConnectError as exc:
-        raise click.ClickException(f"Unable to connect to modem host: {exc}") from exc
+        raise click.ClickException(f"Unable to connect to router host: {exc}") from exc
 
     try:
-        client.login(password)
-        logger.debug(f"Logged in to {host}")
+        client.login(router_password)
+        logger.debug(f"Logged in to {router_host}")
         response = client.request(path, method=effective_method, payload=payload, expects="json")
     except httpx.ConnectError as exc:
-        raise click.ClickException("Unable to connect to modem host") from exc
+        raise click.ClickException("Unable to connect to router host") from exc
     except zte_client.TimeoutError as exc:
         raise click.ClickException(f"Request timed out: {exc}") from exc
     except zte_client.AuthenticationError as exc:
         raise click.ClickException(str(exc)) from exc
     except zte_client.ResponseParseError as exc:
-        raise click.ClickException(f"Failed to parse modem response: {exc}") from exc
+        raise click.ClickException(f"Failed to parse router response: {exc}") from exc
     except zte_client.RequestError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -69,7 +69,7 @@ def discover_command(
         target_path = target_file if target_file.is_absolute() else Path.cwd() / target_file
         markdown_io.write_discover_example(
             target_path,
-            host=host,
+            host=router_host,
             path=path,
             method=effective_method,
             payload=payload,
@@ -80,7 +80,7 @@ def discover_command(
             target_path.parent,
             name=target_path.stem,
             request={
-                "host": host,
+                "host": router_host,
                 "path": path,
                 "method": effective_method,
                 "payload": payload,

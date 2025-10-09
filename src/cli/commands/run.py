@@ -5,29 +5,20 @@ from __future__ import annotations
 import click
 
 from lib.logging_setup import get_logger, logging_options
+from lib.options import router_options
 from services import zte_client
 from services.modem_mock import MockModemClient, ModemFixtureError
 from services.mqtt_mock import MockMQTTBroker
 
 
-def _derive_device_id(device_host: str) -> str:
-    return f"zte-{device_host.replace('.', '-')}-mock"
+def _derive_device_id(host: str) -> str:
+    # Strip scheme and trailing slash for ID derivation
+    host_part = host.split("://")[-1].rstrip("/")
+    return f"zte-{host_part.replace('.', '-')}-mock"
 
 
 @click.command(name="run")
-@click.option(
-    "device_host",
-    "--device-host",
-    default="192.168.0.1",
-    show_default=True,
-    help="Local modem address",
-)
-@click.option(
-    "device_pass",
-    "--device-pass",
-    required=True,
-    help="Password used for modem REST authentication",
-)
+@router_options(default_host="192.168.0.1")
 @logging_options(help_text="Log level for stdout and file handlers")
 @click.option(
     "foreground",
@@ -57,8 +48,8 @@ def _derive_device_id(device_host: str) -> str:
 )
 def run_command(
     *,
-    device_host: str,
-    device_pass: str,
+    router_host: str,
+    router_password: str,
     log_level: str,
     foreground: bool,
     log_file: str | None,
@@ -68,9 +59,9 @@ def run_command(
     mqtt_password: str | None,
     rest_test: bool,
 ) -> dict[str, object]:
-    """Run the ZTE modem daemon with mocked MQTT publish loop."""
+    """Run the ZTE router daemon with mocked MQTT publish loop."""
     logger = get_logger(log_level, log_file)
-    device_id = _derive_device_id(device_host)
+    device_id = _derive_device_id(router_host)
     logger.info(
         f"Starting mocked daemon run (foreground={foreground}, device_id={device_id})"
     )
@@ -78,8 +69,8 @@ def run_command(
     # Optional: exercise REST client in a minimal way for test-mode verification
     if rest_test:
         try:
-            client = zte_client.ZTEClient(f"http://{device_host}")
-            client.login(device_pass)
+            client = zte_client.ZTEClient(router_host)
+            client.login(router_password)
             # Lightweight GET against a benign endpoint to verify session
             client.request(
                 "/goform/goform_get_cmd_process?isTest=false&cmd=lan_station_list",
@@ -96,7 +87,7 @@ def run_command(
     except ModemFixtureError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    click.echo(f"Modem snapshot timestamp: {snapshot.timestamp}")
+    click.echo(f"Router snapshot timestamp: {snapshot.timestamp}")
     click.echo(f"RSRP: {snapshot.rsrp} dBm | Provider: {snapshot.provider}")
 
     broker = MockMQTTBroker(device_id=device_id)

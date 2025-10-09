@@ -6,13 +6,14 @@ from multiprocessing import Lock
 import click
 
 from lib.logging_setup import get_logger, logging_options
+from lib.options import router_options
 from services import zte_client
 from services.modem_mock import MockModemClient, ModemFixtureError
 
 
 @click.command(
     name="read",
-    help="""Read a modem metric by identifier.
+    help="""Read a router metric by identifier.
 
 Arguments:
   METRIC  Metric identifier (e.g., lte.rsrp1, nr5g.pci, wan_ip).
@@ -23,17 +24,16 @@ Identifiers use dot-paths with optional array indices, for example:
 See docs/metrics.md for the full catalog and naming rules.""",
 )
 @click.argument("metric", metavar="METRIC")
-@click.option("--host", help="Modem host URL (use REST client when provided)")
-@click.option("--password", help="Modem admin password (required with --host)")
+@router_options()
 @logging_options(help_text="Log level for stdout output")
 def read_command(
     metric: str,
-    host: str | None,
-    password: str | None,
+    router_host: str,
+    router_password: str,
     log_level: str,
     log_file: str | None,
 ) -> str:
-    """Read a modem metric from live REST (when --host given) or cached fixture.
+    """Read a router metric from live REST (when --router-host given) or cached fixture.
 
     Accepts identifiers like 'lte.rsrp1', 'nr5g.pci', 'wan_ip', 'temp.a'.
     """
@@ -128,12 +128,10 @@ def read_command(
         return False, None
 
     live_value: object | None = None
-    if host:
-        if not password:
-            raise click.ClickException("--password is required when using --host")
+    if router_host:
         try:
-            client = zte_client.ZTEClient(host)
-            client.login(password)
+            client = zte_client.ZTEClient(router_host)
+            client.login(router_password)
             # Comprehensive metrics fetch (multi_data=1) derived from docs/discover/metrics.md
             metrics_cmd = (
                 "wan_active_band,wan_active_channel,wan_lte_ca,wan_apn,wan_ipaddr,"
@@ -195,7 +193,7 @@ def read_command(
             live_value = data.get(json_key)
             if live_value is None:
                 raise click.ClickException(
-                    f"No value for '{ident}' in modem response (missing '{json_key}')."
+                    f"No value for '{ident}' in router response (missing '{json_key}')."
                 )
             click.echo(f"{ident}: {live_value}")
             return ident

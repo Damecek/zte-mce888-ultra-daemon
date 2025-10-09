@@ -43,9 +43,9 @@ def test_discover_writes_target_markdown(monkeypatch, tmp_path):
         cli_module.cli,
         [
             "discover",
-            "--host",
+            "--router-host",
             "http://192.168.0.1",
-            "--password",
+            "--router-password",
             "secret",
             "--path",
             "goform/test",

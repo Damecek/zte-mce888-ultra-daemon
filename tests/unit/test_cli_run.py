@@ -20,7 +20,9 @@ def test_run_command_emits_greeting_and_records_publish(tmp_path: Path, runner: 
         cli,
         [
             "run",
-            "--device-pass",
+            "--router-host",
+            "192.168.0.1",
+            "--router-password",
             "test-pass",
             "--log",
             "info",
@@ -41,7 +43,7 @@ def test_run_command_emits_greeting_and_records_publish(tmp_path: Path, runner: 
 
     assert result.exit_code == 0
     output = result.output
-    assert "Modem snapshot timestamp: 2025-10-06T10:00:00Z" in output
+    assert "Router snapshot timestamp: 2025-10-06T10:00:00Z" in output
     assert "Recorded MQTT payload to mock broker" in output
     record = get_last_record()
     assert record is not None
@@ -56,4 +58,4 @@ def test_run_command_emits_greeting_and_records_publish(tmp_path: Path, runner: 
 def test_run_command_requires_device_password(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["run"], catch_exceptions=False)
     assert result.exit_code != 0
-    assert "--device-pass" in result.output
+    assert "--router-password" in result.output

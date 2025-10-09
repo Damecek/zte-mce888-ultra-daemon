@@ -16,7 +16,7 @@ def test_discover_reports_unreachable_host(monkeypatch):
 
     result = runner.invoke(
         cli_module.cli,
-        ["discover", "--host", "http://example", "--password", "pw", "--path", "goform/test"],
+        ["discover", "--router-host", "http://example", "--router-password", "pw", "--path", "goform/test"],
     )
 
     assert result.exit_code != 0
@@ -37,7 +37,7 @@ def test_discover_reports_auth_failure(monkeypatch):
 
     result = runner.invoke(
         cli_module.cli,
-        ["discover", "--host", "http://example", "--password", "pw", "--path", "goform/test"],
+        ["discover", "--router-host", "http://example", "--router-password", "pw", "--path", "goform/test"],
     )
 
     assert result.exit_code != 0
@@ -61,7 +61,7 @@ def test_discover_success_prints_response(monkeypatch):
 
     result = runner.invoke(
         cli_module.cli,
-        ["discover", "--host", "http://example", "--password", "pw", "--path", "goform/test"],
+        ["discover", "--router-host", "http://example", "--router-password", "pw", "--path", "goform/test"],
     )
 
     assert result.exit_code == 0
