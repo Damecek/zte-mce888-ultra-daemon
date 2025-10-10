@@ -30,9 +30,13 @@ uv run zte run \
   --mqtt-host 192.168.0.50:8080 \
   --mqtt-topic zte-modem
 
-# Read a metric (live via REST if host/password provided, otherwise from the mock fixture)
-uv run zte read provider
-uv run zte read lte.rsrp1
+# Read a metric from the router via REST
+uv run zte read provider \
+  --router-host 192.168.0.1 \
+  --router-password secret
+uv run zte read lte.rsrp1 \
+  --router-host 192.168.0.1 \
+  --router-password secret
 
 # Discover modem endpoints and optionally write a Markdown example
 uv run zte discover \

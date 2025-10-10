@@ -7,7 +7,6 @@ import click
 from lib.logging_setup import get_logger, logging_options
 from lib.options import router_options
 from services import zte_client
-from services.modem_mock import MockModemClient, ModemFixtureError
 
 
 @click.command(
@@ -32,7 +31,7 @@ def read_command(
     log_level: str,
     log_file: str | None,
 ) -> str:
-    """Read a router metric from live REST (when --router-host given) or cached fixture.
+    """Read a router metric from the router via REST.
 
     Accepts identifiers like 'lte.rsrp1', 'nr5g.pci', 'wan_ip', 'temp.a'.
     """
@@ -108,23 +107,7 @@ def read_command(
             items.append(obj)
         return items
 
-    # Subset mapping against the mock fixture payload (tests/fixtures/modem/latest.json)
-    # We fall back to these when --host is not provided
-    def read_from_mock_payload(payload: dict) -> tuple[bool, object | None]:
-        # Limited set available in the current test fixture
-        if ident_norm in {"lte.rsrp", "rsrp", "lte.rsrp1"}:
-            return True, payload.get("signal", {}).get("rsrp")
-        if ident_norm in {
-            "nr5g.sinr",
-            "sinr",
-        }:  # preserve basic name for backward compat in fixture
-            return True, payload.get("signal", {}).get("sinr")
-        if ident_norm in {"provider"}:
-            return True, payload.get("provider")
-        if ident_norm in {"wan_ip", "network.ipv4"}:
-            return True, payload.get("network", {}).get("ipv4")
-        # Not available in the minimal mock fixture
-        return False, None
+    # All reads are performed live against the router.
 
     live_value: object | None = None
     if router_host:
@@ -196,20 +179,6 @@ def read_command(
         except zte_client.ZTEClientError as exc:
             raise click.ClickException(str(exc)) from exc
 
-    modem = MockModemClient()
-    try:
-        snapshot = modem.load_snapshot()
-    except ModemFixtureError as exc:
-        raise click.ClickException(str(exc)) from exc
-
-    ok, value = read_from_mock_payload(snapshot.raw_payload)
-    if not ok:
-        raise click.ClickException(
-            "Unknown metric identifier for mock data. Supported examples: lte.rsrp1, nr5g.sinr, provider, wan_ip"
-        )
-
-    logger.info(f"Read metric from cached snapshot: {ident}")
-    if log_level.lower() == "debug":
-        logger.debug(f"Metric value: {ident}={value}")
-    click.echo(f"{ident}: {value}")
-    return ident
+    # If desired in the future, a dedicated flag can enable reading from
+    # cached fixtures explicitly. For now, host/password are required and
+    # all reads are live.
