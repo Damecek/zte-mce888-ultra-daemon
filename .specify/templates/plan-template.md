@@ -52,6 +52,9 @@
 - **Deterministic messaging**: Design preserves MQTT topic/schema contracts, describes schema version impact, and schedules migration tasks when needed.
 - **Documentation parity**: Plan lists the Markdown updates required for attribute catalog, MQTT map, CLI usage, and operator playbooks.
 - **Operational surface**: CLI and service changes include diagnostics pathways, exit codes, and Linux deployment considerations aligned with the constitution.
+- **Maintainability**: Design explains package boundaries, public interfaces, and how `ruff` rules and docstrings will be upheld.
+- **Modularity**: Architecture decomposes into `telemetry`, `mqtt`, `pipeline`, `cli`, and `config` layers with clear interfaces and no forbidden cross-dependencies.
+- **Testing & coverage**: Plan includes tests for new behavior, CI on Linux via `uv run pytest`, and coverage targets/gating consistent with the constitution.
 
 ## Project Structure
 
@@ -178,7 +181,7 @@ directories captured above]
 - Implementation tasks to make tests pass
 
 **Ordering Strategy**:
-- TDD order: Tests before implementation 
+- Prefer tests early; ensure coverage targets are met
 - Dependency order: Models before services before UI
 - Mark [P] for parallel execution (independent files)
 

@@ -1,15 +1,33 @@
 <!--
 Sync Impact Report
-Version change: N/A → 1.0.0
-Modified principles: [PRINCIPLE_1_NAME] → End-to-End Modem Telemetry; [PRINCIPLE_2_NAME] → Local-Only Secure Communications; [PRINCIPLE_3_NAME] → Deterministic MQTT Publishing; [PRINCIPLE_4_NAME] → Markdown Evidence Trail; [PRINCIPLE_5_NAME] → Operable CLI-First Service
-Added sections: Operational Constraints & Interfaces; Development Workflow & Quality Gates
+Version change: 1.0.0 → 1.1.0
+Modified principles: None (added new principles); Development Workflow updated (removed strict TDD)
+Added sections: Clean Code & Maintainability; Modular Architecture; Testing & Coverage Discipline
 Removed sections: None
-Templates requiring updates: ✅ .specify/templates/plan-template.md; ✅ .specify/templates/spec-template.md; ✅ .specify/templates/tasks-template.md
-Follow-up TODOs: None
+Templates requiring updates: ✅ .specify/templates/plan-template.md; ✅ .specify/templates/tasks-template.md; ✅ README.md (tests guidance optional); ⚠ pyproject.toml (add pytest-cov)
+Follow-up TODOs:
+- TODO(pytest-cov): Add pytest-cov to dev extras and wire coverage gate in CI
+- TODO(ci-coverage-threshold): Enforce coverage ≥ 85% overall and ≥ 80% per-module
 -->
 # ZTE MC888 Ultra MQTT Daemon Constitution
 
 ## Core Principles
+
+### Clean Code & Maintainability
+**Non-Negotiables**
+- Code MUST pass `ruff` lint and format checks with zero errors and warnings.
+- Modules and public functions MUST include docstrings that explain purpose and side effects.
+- Functions and classes MUST follow single-responsibility; avoid unnecessary complexity and dead code.
+- Cyclic imports and tight coupling are prohibited; prefer clear, stable interfaces.
+**Rationale**: Maintainable code lowers defect rates, accelerates feature delivery, and reduces operational risk.
+
+### Modular Architecture
+**Non-Negotiables**
+- Separate concerns into modules/packages: `telemetry` (ZTE REST), `mqtt` (broker I/O), `pipeline` (poll→publish), `cli` (operations), `config` (loading/validation).
+- Cross-module access MUST go through well-defined interfaces or protocols; avoid reaching into internals.
+- Dependency direction MUST favor inversion where useful so implementation details can be swapped under tests.
+- Public interfaces are considered contracts and MUST be versioned or documented when behavior changes.
+**Rationale**: Modularity enables parallel work, easier testing, and safer refactors.
 
 ### End-to-End Modem Telemetry
 **Non-Negotiables**
@@ -20,7 +38,7 @@ Follow-up TODOs: None
 
 ### Local-Only Secure Communications
 **Non-Negotiables**
-- HTTP interactions with the modem MUST target private network addresses only (default `http://192.169.0.1`) and refuse reconfiguration to public endpoints without a recorded risk assessment.
+- HTTP interactions with the modem MUST target private network addresses only (default `http://192.168.0.1`) and refuse reconfiguration to public endpoints without a recorded risk assessment.
 - MQTT publishing MUST default to local broker credentials, with authentication and TLS options documented and enabled whenever the broker supports them.
 **Rationale**: Constraining traffic to the local network prevents accidental data exposure and keeps the deployment aligned with the homeowner's security posture.
 
@@ -43,14 +61,24 @@ Follow-up TODOs: None
 - Exit codes and logging MUST distinguish configuration errors, connectivity faults, and runtime failures so that automation can react deterministically.
 **Rationale**: A robust operational surface keeps the service manageable in unattended home server environments.
 
+### Testing & Coverage Discipline
+**Non-Negotiables**
+- Tests MUST be part of every change; TDD is optional.
+- Continuous integration on Linux MUST run `uv run pytest` for all changes and block merges on failures.
+- Overall test coverage MUST be ≥ 85% with no critical modules below 80%; report coverage in CI.
+- Integration tests MUST cover modem polling, MQTT publish/subscribe round-trips, and CLI diagnostics where feasible.
+**Rationale**: High coverage and continuous testing catch regressions early without imposing a rigid workflow.
+
 ## Operational Constraints & Interfaces
 - Modem integration uses the ZTE MC888 Ultra HTTP REST interface; requests leverage authenticated local sessions and MUST avoid disrupting the modem's native UI.
 - MQTT communication targets a broker reachable on the local network; topic namespaces follow the documented schema version and include per-attribute subtopics.
-- Configuration files and CLI flags MUST default to the canonical topology: modem at `192.169.0.1`, daemon on a Linux host, and broker on a distinct local address.
+- Configuration files and CLI flags MUST default to the canonical topology: modem at `192.168.0.1`, daemon on a Linux host, and broker on a distinct local address.
 - Network transports MUST avoid cloud dependencies; any optional remote telemetry exports require an explicit opt-in feature proposal and governance review.
 
 ## Development Workflow & Quality Gates
-- Follow test-driven development for schema and CLI changes: write contract tests for REST responses and MQTT payloads before implementation.
+- Prefer tests early; TDD is NOT required. Every change MUST include tests that exercise new behavior.
+- CI MUST run on Linux and include: `uv run pytest`, coverage collection, and `ruff` lint/format checks.
+- Coverage gates MUST enforce ≥ 85% overall and ≥ 80% per critical module; exceptions require documented rationale and an owner/date.
 - Every pull request MUST attach evidence of documentation updates, sample MQTT messages, and connectivity test results against a local environment (real modem or emulator).
 - Automated checks MUST validate schema versions, lint documentation for missing attribute entries, and ensure CLI help output matches documented options.
 - Release candidates MUST pass integration tests covering modem polling, MQTT publish/subscribe round-trips, and CLI diagnostics commands on a Linux target.
@@ -61,4 +89,5 @@ Follow-up TODOs: None
 - Versioning follows semantic versioning: MAJOR for breaking governance changes, MINOR for new principles or material expansions, PATCH for clarifications.
 - Compliance reviews occur before every tagged release and quarterly thereafter; unresolved findings block release until rectified or explicitly deferred with owner and due date recorded.
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-06 | **Last Amended**: 2025-10-06
+**Version**: 1.1.0 | **Ratified**: 2025-10-06 | **Last Amended**: 2025-10-10
+

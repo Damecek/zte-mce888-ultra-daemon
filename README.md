@@ -67,6 +67,11 @@ uv run --with .[dev] pytest
 # or install dev extras, then run normally
 uv sync --extra dev
 uv run pytest
+
+### Coverage
+Collect coverage locally (requires `pytest-cov`):
+
+uv run --with pytest-cov pytest --cov=src --cov-report=term-missing
 ```
 
 ## Linting and Formatting

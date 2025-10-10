@@ -22,7 +22,7 @@
 4. Apply task rules:
    → Different files = mark [P] for parallel
    → Same file = sequential (no [P])
-   → Tests before implementation (TDD) and include modem/MQTT diagnostics
+   → Prefer tests early and include modem/MQTT diagnostics; ensure coverage targets
 5. Number tasks sequentially (T001, T002...)
 6. Generate dependency graph
 7. Create parallel execution examples
@@ -48,8 +48,8 @@
 - [ ] T002 Initialize runtime environment and dependency management
 - [ ] T003 [P] Configure linting, formatting, and CI entrypoints for Linux target
 
-## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
-**CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
+## Phase 3.2: Tests & Coverage
+**Goal: Add/adjust tests for new behavior and maintain/raise coverage targets**
 - [ ] T004 [P] Contract test modem REST attribute fetch in `tests/contract/test_modem_attributes.py`
 - [ ] T005 [P] Contract test modem session handling and authentication renewal in `tests/contract/test_modem_session.py`
 - [ ] T006 [P] MQTT payload schema test in `tests/contract/test_mqtt_payloads.py`
@@ -57,6 +57,7 @@
 - [ ] T008 Integration test CLI diagnostics command in `tests/integration/test_cli_status.py`
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
+<!-- Implementation may proceed when appropriate; tests should accompany changes to maintain coverage targets. -->
 - [ ] T009 [P] Implement modem attribute poller in `src/telemetry/zte_mc888.py`
 - [ ] T010 [P] Build MQTT publisher with deterministic topic map in `src/mqtt/publisher.py`
 - [ ] T011 Wire telemetry-to-MQTT pipeline scheduler in `src/pipeline/dispatcher.py`
@@ -124,6 +125,6 @@ Task: "Integration test CLI diagnostics command in tests/integration/test_cli_st
 - [ ] All modem REST contracts have corresponding test tasks
 - [ ] All telemetry attributes and MQTT topics have implementation coverage
 - [ ] Documentation and runbook updates are scheduled
-- [ ] All tests come before implementation
+- [ ] Coverage targets are met; high-risk paths have tests
 - [ ] Parallel tasks are independent and specify exact file paths
 - [ ] No task modifies the same file as another [P] task
