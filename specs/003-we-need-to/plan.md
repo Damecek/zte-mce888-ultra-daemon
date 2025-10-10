@@ -74,50 +74,52 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
 src/
-├── models/
-├── services/
 ├── cli/
+│   ├── zte.py
+│   └── commands/
+│       ├── run.py
+│       ├── read.py
+│       └── discover.py
+├── models/
+│   ├── metrics.py
+│   ├── mqtt_config.py              # new (T007)
+│   ├── router_config.py            # new (T008)
+│   ├── metric_request.py           # new (T009)
+│   ├── publish_envelope.py         # new (T010)
+│   └── daemon_state.py             # new (T011)
+├── services/
+│   ├── zte_client.py
+│   ├── modem_mock.py
+│   ├── mqtt_mock.py
+│   ├── mqtt_client.py              # new (T014)
+│   └── metrics_aggregator.py       # new (T016)
+├── pipeline/
+│   └── dispatcher.py               # new (T013, T017)
 └── lib/
+    ├── logging_setup.py
+    ├── options.py
+    ├── markdown_io.py
+    ├── snapshots.py
+    └── topics.py                   # new (T002, T012)
 
 tests/
 ├── contract/
+│   └── test_mqtt_contract.py       # new (T004)
 ├── integration/
+│   ├── test_single_metric_request.py      # new (T005)
+│   └── test_aggregate_lte_request.py      # new (T006)
 └── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+    ├── test_models_config.py       # new (T021)
+    ├── test_models_requests.py     # new (T021)
+    ├── test_models_state.py        # new (T021)
+    └── existing tests ...
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Single-project repository. Source under `src/` with
+feature modules in `cli`, `services`, `pipeline`, `models`, and `lib`.
+Tests under `tests/` organized into `contract`, `integration`, and `unit`.
 
 ## Phase 0: Outline & Research
 1. **Extract unknowns from Technical Context** above:
