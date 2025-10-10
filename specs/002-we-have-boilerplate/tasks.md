@@ -113,7 +113,7 @@
 - [X] T025 [P] README and quickstart updates
   - Update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/README.md` to link to docs and include examples
 - [X] T026 [P] Record auth contract details
-  - Extract from `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/js_implementation.js` and update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/specs/002-we-have-boilerplate/contracts/README.md`
+  - Extract from `third_party/zte-web-script/js_implementation.js` and update `/Users/adam/IdeaProjects/zte-mc888-ultra-deamon/specs/002-we-have-boilerplate/contracts/README.md`
 
 ## Dependencies
 - T005–T015 (tests) precede T016–T023 (implementation)

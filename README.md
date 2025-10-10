@@ -100,3 +100,6 @@ uvx pre-commit run -a           # run hooks on all files
 - `src/` CLI and services implementation
 - `tests/` unit, integration, and contract tests
 - `docs/discover/` captured examples from the `discover` command
+
+## Acknowledgements
+- Upstream reference: ZTE-Web-Script by tpoechtrager (`https://github.com/tpoechtrager/ZTE-Web-Script`). Parts of this project (metric key names and the modem login flow) were informed by that work. The original JavaScript reference used during development is preserved at `third_party/zte-web-script/js_implementation.js` for documentation purposes.
