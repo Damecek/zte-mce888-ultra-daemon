@@ -101,7 +101,7 @@ __all__ = ["configure", "get_logger", "StructuredFormatter"]
 # Click integration helpers
 try:  # Import guarded to avoid hard dependency at import time
     import click
-except Exception:  # pragma: no cover - defensive fallback for non-CLI contexts
+except ImportError:  # pragma: no cover - defensive fallback for non-CLI contexts
     click = None  # type: ignore
 
 
