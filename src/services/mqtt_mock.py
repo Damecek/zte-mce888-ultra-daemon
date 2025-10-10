@@ -1,13 +1,19 @@
-"""Mock MQTT broker for hello-world flows."""
+"""Mock MQTT broker for hello-world flows (flattened src layout)."""
+
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, asdict
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional
+from dataclasses import asdict, dataclass
+from datetime import datetime
 
-from zte_daemon.modem.mock_client import ModemSnapshot
+try:  # Python < 3.11 fallback
+    from datetime import UTC  # type: ignore
+except Exception:  # pragma: no cover - compatibility path for running script on older Pythons
+    UTC = UTC  # type: ignore
+from pathlib import Path
+from typing import Any, ClassVar
+
+from services.modem_mock import ModemSnapshot
 
 _DEFAULT_LOG = Path("logs") / "mqtt-mock.jsonl"
 
@@ -15,8 +21,8 @@ _DEFAULT_LOG = Path("logs") / "mqtt-mock.jsonl"
 @dataclass(slots=True)
 class PublishRecord:
     topic: str
-    payload: Dict[str, Any]
-    broker_host: Optional[str]
+    payload: dict[str, Any]
+    broker_host: str | None
     notes: str
     published_at: str
 
@@ -29,9 +35,9 @@ class MockMQTTBroker:
     def __init__(self, device_id: str, log_path: Path | None = None) -> None:
         self.device_id = device_id
         self.log_path = Path(log_path) if log_path else _DEFAULT_LOG
-        self.records: List[PublishRecord] = []
+        self.records: list[PublishRecord] = []
 
-    def build_payload(self, snapshot: ModemSnapshot) -> Dict[str, Any]:
+    def build_payload(self, snapshot: ModemSnapshot) -> dict[str, Any]:
         captured_at = snapshot.timestamp
         return {
             "schema_version": "0.1.0-mock",
@@ -48,9 +54,7 @@ class MockMQTTBroker:
             },
         }
 
-    def publish(
-        self, snapshot: ModemSnapshot, *, topic: str, broker_host: str | None
-    ) -> PublishRecord:
+    def publish(self, snapshot: ModemSnapshot, *, topic: str, broker_host: str | None) -> PublishRecord:
         payload = self.build_payload(snapshot)
         note = (
             "Recorded publish to mock broker defaults"
@@ -78,3 +82,6 @@ class MockMQTTBroker:
 def get_last_record() -> PublishRecord | None:
     """Return the most recent publish record for test inspection."""
     return MockMQTTBroker.last_record
+
+
+__all__ = ["MockMQTTBroker", "PublishRecord", "get_last_record"]

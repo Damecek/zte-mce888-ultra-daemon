@@ -21,7 +21,7 @@ Options:
   --device-host TEXT        Local modem address [default: 192.168.0.1]
   --device-pass TEXT        Password used for modem REST authentication [required]
   --log [debug|info|warn|error]
-                            Log level for stdout and file handlers [default: info]
+                            Log level for stdout and file handlers [default: warn]
   --foreground              Run in foreground (runs in background by default).
   --log-file PATH           Optional log file destination (ensures parent dir exists).
   --mqtt-host TEXT          Placeholder broker address (stored but not contacted).

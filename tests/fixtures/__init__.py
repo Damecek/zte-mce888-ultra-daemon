@@ -1,10 +1,11 @@
 """Test fixtures helpers for modem telemetry."""
+
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 FIXTURES_ROOT = Path(__file__).resolve().parent
 LATEST_FIXTURE = FIXTURES_ROOT / "modem" / "latest.json"
@@ -20,10 +21,10 @@ class ModemSnapshot:
     rsrp: int
     sinr: int
     provider: str
-    raw_payload: Dict[str, Any]
+    raw_payload: dict[str, Any]
 
     @property
-    def metric_map(self) -> Dict[str, Any]:
+    def metric_map(self) -> dict[str, Any]:
         return {
             "RSRP": self.rsrp,
             "Provider": self.provider,
@@ -34,15 +35,11 @@ def load_latest_snapshot(path: Path | None = None) -> ModemSnapshot:
     """Load the latest modem snapshot fixture."""
     fixture_path = path or LATEST_FIXTURE
     if not fixture_path.exists():
-        raise FixtureError(
-            "Modem fixture not found. Capture a payload under tests/fixtures/modem/latest.json"
-        )
+        raise FixtureError("Modem fixture not found. Capture a payload under tests/fixtures/modem/latest.json")
     try:
         payload = json.loads(fixture_path.read_text())
     except json.JSONDecodeError as exc:
-        raise FixtureError(
-            "Malformed modem fixture JSON. Validate the capture file before running tests."
-        ) from exc
+        raise FixtureError("Malformed modem fixture JSON. Validate the capture file before running tests.") from exc
 
     signal = payload.get("signal", {})
     return ModemSnapshot(

@@ -5,13 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "zte-daemon"
 version = "0.1.0"
-description = "Mocked hello-world CLI for the ZTE MC888 Ultra daemon"
+description = "Developer CLI and mocked workflows for the ZTE MC888 Ultra daemon"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.1",
     "gmqtt>=0.6",
     "anyio>=4.0",
+    "httpx>=0.27"
 ]
 
 [project.optional-dependencies]
@@ -25,4 +26,19 @@ pythonpath = ["src"]
 addopts = "-ra"
 
 [project.scripts]
-zte = "zte_daemon.cli.main:cli"
+zte = "cli.zte:cli"
+zte-cli-docs = "tools.cli_docs:main"
+
+[tool.ruff]
+# Keep lines readable and match our Python version
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+# Core error/warning rules, import sorting, and modernization
+select = ["E", "F", "I", "UP"]
+ignore = []
+
+[tool.ruff.format]
+# Use Ruff's opinionated formatter for consistency
+preview = true

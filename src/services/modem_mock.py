@@ -1,19 +1,14 @@
-"""Mock modem client that loads captured fixtures."""
+"""Mock modem client that loads captured fixtures (flattened src layout)."""
+
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
-_DEFAULT_FIXTURE = (
-    Path(__file__).resolve().parents[3]
-    / "tests"
-    / "fixtures"
-    / "modem"
-    / "latest.json"
-)
+_DEFAULT_FIXTURE = Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "modem" / "latest.json"
 
 
 class ModemFixtureError(RuntimeError):
@@ -32,10 +27,10 @@ class ModemSnapshot:
     rsrp: int
     sinr: int
     provider: str
-    raw_payload: Dict[str, Any]
+    raw_payload: dict[str, Any]
 
     @property
-    def metric_map(self) -> Dict[str, Any]:
+    def metric_map(self) -> dict[str, Any]:
         return {
             "RSRP": self.rsrp,
             "Provider": self.provider,
@@ -53,9 +48,7 @@ class MockModemClient:
     def load_snapshot(self, path: Path | None = None) -> ModemSnapshot:
         fixture_path = Path(path) if path else self._fixture_path
         if not fixture_path.exists():
-            raise ModemFixtureError(
-                "Modem fixture not found. Capture a payload under tests/fixtures/modem/latest.json"
-            )
+            raise ModemFixtureError("Modem fixture not found. Capture a payload under tests/fixtures/modem/latest.json")
         try:
             payload = json.loads(fixture_path.read_text())
         except json.JSONDecodeError as exc:  # pragma: no cover - extremely unlikely
@@ -66,9 +59,7 @@ class MockModemClient:
         timestamp = payload["timestamp"]
         current_dt = _to_datetime(timestamp)
         if self._last_timestamp and current_dt <= self._last_timestamp:
-            raise RuntimeError(
-                "Modem snapshot timestamp must increase monotonically between captures."
-            )
+            raise RuntimeError("Modem snapshot timestamp must increase monotonically between captures.")
         signal = payload.get("signal", {})
         snapshot = ModemSnapshot(
             timestamp=timestamp,
@@ -93,3 +84,10 @@ class MockModemClient:
         if not self._snapshot:
             return self.load_snapshot()
         return self._snapshot
+
+
+__all__ = [
+    "MockModemClient",
+    "ModemSnapshot",
+    "ModemFixtureError",
+]

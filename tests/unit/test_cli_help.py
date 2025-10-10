@@ -1,8 +1,9 @@
-from click.testing import CliRunner
+import re
 
 import pytest
+from click.testing import CliRunner
 
-from zte_daemon.cli.main import cli
+from cli.zte import cli
 
 
 @pytest.fixture()
@@ -16,8 +17,12 @@ def test_top_level_help_includes_commands(runner: CliRunner) -> None:
     output = result.output
     assert "Usage: zte [OPTIONS] COMMAND [ARGS]..." in output
     assert "--version  Show the version and exit." in output
-    assert "run   Run the ZTE modem daemon with mocked MQTT publish loop." in output
-    assert "read  Read a modem metric from cached telemetry (e.g., RSRP, Provider)." in output
+    assert re.search(
+        r"^\s*run\s+Run the ZTE router daemon with mocked MQTT publish loop\.",
+        output,
+        flags=re.M,
+    )
+    assert re.search(r"^\s*read\s+Read a router metric by identifier\.", output, flags=re.M)
 
 
 def test_run_command_help_matches_contract(runner: CliRunner) -> None:
@@ -25,15 +30,15 @@ def test_run_command_help_matches_contract(runner: CliRunner) -> None:
     assert result.exit_code == 0
     output = result.output
     assert "Usage: zte run [OPTIONS]" in output
-    assert "--device-host TEXT" in output
-    assert "Local modem address" in output
-    assert "[default: 192.168.0.1]" in output
-    assert "--device-pass TEXT" in output
-    assert "Password used for modem REST authentication" in output
+    assert "--router-host TEXT" in output
+    assert "Router host URL" in output
+    # Default may be omitted in help when option is required
+    assert "--router-password TEXT" in output
+    assert "Router admin password" in output
     assert "[required]" in output
     assert "--log [debug|info|warn|error]" in output
     assert "Log level for stdout and file handlers" in output
-    assert "[default: info]" in output
+    assert "[default: warn]" in output
     assert "--foreground" in output
     assert "Run in foreground (runs in background" in output
     assert "--log-file PATH" in output
@@ -55,4 +60,4 @@ def test_read_command_help_matches_contract(runner: CliRunner) -> None:
     output = result.output
     assert "Usage: zte read [OPTIONS] METRIC" in output
     assert "METRIC" in output
-    assert "Metric name (RSRP, Provider)" in output
+    assert "Metric identifier (e.g., lte.rsrp1, nr5g.pci, wan_ip)." in output
