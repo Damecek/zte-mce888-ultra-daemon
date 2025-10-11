@@ -19,6 +19,8 @@ class MetricReader(Protocol):
 class Aggregator(Protocol):
     def collect_lte(self) -> dict[str, Any]:  # pragma: no cover - protocol definition
         ...
+    def collect_all(self) -> dict[str, Any]:  # pragma: no cover - protocol definition
+        ...
 
 
 class Dispatcher:
@@ -59,7 +61,10 @@ class Dispatcher:
 
         try:
             if request.is_aggregate:
-                payload_obj = self.aggregator.collect_lte()
+                if request.metric == "lte":
+                    payload_obj = self.aggregator.collect_lte()
+                else:  # "zte" top-level aggregate
+                    payload_obj = self.aggregator.collect_all()
                 if not payload_obj:
                     self._logger.warning("Aggregate request produced no data", extra={"topic": topic})
                     return

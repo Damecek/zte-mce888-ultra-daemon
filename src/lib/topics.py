@@ -75,7 +75,7 @@ def parse_request_topic_for_root(topic: str, root: str) -> ParsedTopic:
     parts = normalized.split("/")
     root_parts = root_norm.split("/")
 
-    if len(parts) < 3 or parts[-1] != "get":
+    if len(parts) < 2 or parts[-1] != "get":
         raise ValueError(f"Unsupported request topic: {topic}")
 
     # Require the topic to start with the expected root prefix
@@ -83,12 +83,15 @@ def parse_request_topic_for_root(topic: str, root: str) -> ParsedTopic:
         raise ValueError("Request topic does not match expected root prefix")
 
     metric_parts = parts[len(root_parts) : -1]
+    # If no metric segment is present beyond the configured root, this denotes
+    # an aggregate request for the top-level 'zte' group (root includes '/zte').
     if not metric_parts:
-        raise ValueError("Request topic must include a metric segment")
+        metric_ident = "zte"
+    else:
+        # Join nested path to a dot-identifier used by metrics map
+        metric_ident = ".".join(metric_parts)
 
-    # Join nested path to a dot-identifier used by metrics map
-    metric_ident = ".".join(metric_parts)
-    is_aggregate = metric_ident == "lte"
+    is_aggregate = metric_ident in {"lte", "zte"}
 
     return ParsedTopic(
         request_topic=normalized,

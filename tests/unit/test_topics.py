@@ -34,6 +34,16 @@ def test_parse_request_topic_for_root_supports_nested_metrics() -> None:
     assert parsed.is_aggregate is False
 
 
+def test_parse_request_topic_for_root_supports_top_level_aggregate() -> None:
+    # When configured root already includes '/zte', a request with only '/get'
+    # denotes an aggregate for the whole zte group.
+    parsed = topics.parse_request_topic_for_root("home/zte/get", "home/zte")
+    assert parsed.request_topic == "home/zte/get"
+    assert parsed.root == "home/zte"
+    assert parsed.metric == "zte"
+    assert parsed.is_aggregate is True
+
+
 def test_response_topic_from_request() -> None:
     assert topics.response_topic_from_request("zte/provider/get") == "zte/provider"
 

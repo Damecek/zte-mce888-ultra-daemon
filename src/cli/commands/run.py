@@ -26,17 +26,19 @@ async def _run_daemon(
     mqtt_port: int,
     mqtt_username: str | None,
     mqtt_password: str | None,
-    mqtt_topic: str,
+    mqtt_topic: str | None,
     foreground: bool,
 ) -> None:
     logger = get_logger(log_level, log_file)
     router_config = RouterConfig(host=router_host, password=router_password)
+    # Effective root topic always includes the 'zte' group.
+    effective_root = f"{mqtt_topic.strip()}/zte" if mqtt_topic else "zte"
     mqtt_config = MQTTConfig(
         host=mqtt_host,
         port=mqtt_port,
         username=mqtt_username,
         password=mqtt_password,
-        root_topic=mqtt_topic,
+        root_topic=effective_root,
     )
     state = DaemonState()
 
@@ -118,7 +120,12 @@ async def _run_daemon(
 @click.option("mqtt_port", "--mqtt-port", default=1883, show_default=True, type=int, help="MQTT broker port")
 @click.option("mqtt_username", "--mqtt-username", help="MQTT username if authentication is required.")
 @click.option("mqtt_password", "--mqtt-password", help="MQTT password if authentication is required.")
-@click.option("mqtt_topic", "--mqtt-topic", default="zte", show_default=True, help="Root topic for requests.")
+@click.option(
+    "mqtt_topic",
+    "--mqtt-topic",
+    default=None,
+    help=("Optional root prefix. Effective request topics are '<root>/zte/...'.\nIf omitted, requests use 'zte/...'."),
+)
 def run_command(
     router_host: str,
     router_password: str,
@@ -129,7 +136,7 @@ def run_command(
     mqtt_port: int,
     mqtt_username: str | None,
     mqtt_password: str | None,
-    mqtt_topic: str,
+    mqtt_topic: str | None,
 ) -> None:
     """Run the ZTE router daemon that responds to MQTT metric requests."""
 

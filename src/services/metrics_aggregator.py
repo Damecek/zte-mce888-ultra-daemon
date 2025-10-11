@@ -108,6 +108,67 @@ class MetricsAggregator:
             aggregate[output_key] = _coerce(raw)
         return aggregate
 
+    def collect_all(self) -> dict[str, Any]:
+        """Collect a nested aggregate for the full 'zte' group.
+
+        Structure:
+        {
+          "provider": str,
+          "cell": str,
+          "connection": str,
+          "bands": str,
+          "wan_ip": str,
+          "lte": { ... },
+          "nr5g": { ... },
+          "temp": { ... },
+        }
+        """
+        payload = self._load_payload()
+
+        def v(key: str) -> Any:
+            raw = payload.get(_METRIC_KEY_MAP[key])
+            return None if raw is None else _coerce(raw)
+
+        out: dict[str, Any] = {
+            "provider": v("provider"),
+            "cell": v("cell"),
+            "connection": v("connection"),
+            "bands": v("bands"),
+            "wan_ip": v("wan_ip"),
+            "lte": {},
+            "nr5g": {},
+            "temp": {},
+        }
+
+        # LTE group
+        for key, ident in _LTE_OUTPUT_KEYS.items():
+            raw = payload.get(_METRIC_KEY_MAP[ident])
+            if raw is None:
+                continue
+            out["lte"][key] = _coerce(raw)
+
+        # NR5G group
+        for key, ident in (
+            ("rsrp1", "nr5g.rsrp1"),
+            ("rsrp2", "nr5g.rsrp2"),
+            ("sinr", "nr5g.sinr"),
+            ("pci", "nr5g.pci"),
+            ("arfcn", "nr5g.arfcn"),
+        ):
+            raw = payload.get(_METRIC_KEY_MAP[ident])
+            if raw is None:
+                continue
+            out["nr5g"][key] = _coerce(raw)
+
+        # Temperature group
+        for key, ident in (("a", "temp.a"), ("m", "temp.m"), ("p", "temp.p")):
+            raw = payload.get(_METRIC_KEY_MAP[ident])
+            if raw is None:
+                continue
+            out["temp"][key] = _coerce(raw)
+
+        return out
+
     def _load_payload(self) -> dict[str, Any]:
         metrics_cmd = ",".join(_QUERY_FIELDS)
         path = f"/goform/goform_get_cmd_process?cmd={metrics_cmd}&multi_data=1"
