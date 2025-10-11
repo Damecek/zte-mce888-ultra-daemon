@@ -85,7 +85,11 @@ async def _run_daemon(
             except asyncio.CancelledError:
                 raise
             except Exception as exc:  # pragma: no cover - defensive loop
-                logger.exception("MQTT loop error", exc_info=exc)
+                logger.warning(
+                    "MQTT loop error; retrying in %ss",
+                    mqtt_config.reconnect_seconds,
+                    exc_info=exc,
+                )
                 state.record_failure()
             finally:
                 state.mark_disconnected()

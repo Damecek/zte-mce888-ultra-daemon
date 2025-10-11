@@ -31,13 +31,22 @@ class StructuredFormatter(logging.Formatter):
     """Emit simple, readable log lines.
 
     Output format:
-      ``<ts> <LEVEL> <component>: <message>``
+      ``<ts> <LEVEL> <component>: <message>[ | error=ExcType: details]``
     """
 
     def format(self, record: logging.LogRecord) -> str:  # noqa: D401 - short override
         timestamp = self.formatTime(record)
         component = record.name.split(".")[-1]
-        return f"{timestamp} {record.levelname} {component}: {record.getMessage()}"
+        base = f"{timestamp} {record.levelname} {component}: {record.getMessage()}"
+
+        # If an exception is attached, append a concise one-line summary so
+        # operational errors (e.g., connection refused) are visible without
+        # dumping multi-line tracebacks in normal runs.
+        if record.exc_info:
+            exc_type, exc_value, _ = record.exc_info
+            if exc_type is not None and exc_value is not None:
+                base += f" | error={exc_type.__name__}: {exc_value}"
+        return base
 
 
 _LEVEL_ALIASES: dict[str, int] = {
