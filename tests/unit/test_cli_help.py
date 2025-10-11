@@ -26,6 +26,11 @@ def test_top_level_help_includes_commands(runner: CliRunner) -> None:
 
 
 def test_run_command_help_matches_contract(runner: CliRunner) -> None:
+    """
+    Verify the 'run' subcommand help output exposes the expected usage, options, and help text.
+    
+    Asserts that the help for `zte run` includes the usage line, router connection options and their descriptions (including required marker for the password), logging options with defaults, foreground and log-file options, and MQTT-related options and descriptions.
+    """
     result = runner.invoke(cli, ["run", "--help"])
     assert result.exit_code == 0
     output = result.output

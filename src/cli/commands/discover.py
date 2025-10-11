@@ -37,6 +37,24 @@ def discover_command(
     log_level: str,
     log_file: str | None,
 ) -> None:
+    """
+    Run a discovery request against a ZTE router and emit the response or save a discovery example to a file.
+    
+    Sends an HTTP request to the router using the provided path and credentials, prints the router response to stdout (pretty-printed JSON for object/array responses), or writes a Markdown discovery example and a snapshot when a target file is specified.
+    
+    Parameters:
+        router_host: Router base URL or host used to create the ZTE client.
+        router_password: Password used to authenticate with the router.
+        path: Relative endpoint path to request on the router.
+        payload: Optional JSON string payload to include in the request body; when present and no explicit method is provided, the command uses POST.
+        method: Optional HTTP method override (e.g., "GET" or "POST"); when omitted, POST is used if payload is provided, otherwise GET.
+        target_file: Optional path to write a Markdown discovery example; when provided the function writes the example, saves a snapshot, prints the written path, and returns.
+        log_level: Logging verbosity level (affects what is logged).
+        log_file: Optional file path to write logs.
+    
+    Raises:
+        click.ClickException: On connection failures, authentication errors, timeouts, request/response parse errors, or other client request errors.
+    """
     effective_method = method.upper() if method else ("POST" if payload else "GET")
     logger = get_logger(log_level, log_file)
 

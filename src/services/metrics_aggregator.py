@@ -60,6 +60,17 @@ _QUERY_FIELDS = sorted({key for key in _METRIC_KEY_MAP.values()})
 
 
 def _coerce(value: Any) -> Any:
+    """
+    Attempt to convert string inputs to numeric types while leaving other values unchanged.
+    
+    If `value` is a string, leading and trailing whitespace are removed; an empty string is returned as-is. If the trimmed string contains a dot, it is converted to a `float`; otherwise an `int` conversion is attempted. If numeric conversion fails, the trimmed string is returned. Non-string inputs are returned unchanged.
+    
+    Parameters:
+        value (Any): The value to coerce.
+    
+    Returns:
+        Any: A `float` or `int` when conversion succeeds, the trimmed `str` when conversion fails or is empty, or the original non-string `value`.
+    """
     if isinstance(value, str):
         text = value.strip()
         if not text:
@@ -77,10 +88,28 @@ class MetricsAggregator:
     """Provides single metric lookups and LTE aggregate payloads."""
 
     def __init__(self, client: zte_client.ZTEClient, logger: logging.Logger | None = None) -> None:
+        """
+        Initialize the MetricsAggregator with a ZTE client and optional logger.
+        
+        Parameters:
+            logger (logging.Logger | None): Logger to use for internal messages. If omitted, a logger named "zte_daemon.metrics_aggregator" is created and used.
+        """
         self._client = client
         self._logger = logger or logging.getLogger("zte_daemon.metrics_aggregator")
 
     def fetch_metric(self, metric: str) -> Any:
+        """
+        Fetches a single metric value from the router payload using the daemon metric identifier.
+        
+        Parameters:
+            metric (str): Daemon metric identifier (case-insensitive) to look up in the router payload.
+        
+        Returns:
+            The metric value coerced to an int or float when the string represents a number, otherwise the original value (string or other type).
+        
+        Raises:
+            KeyError: If the metric is not mapped to a payload key or if the payload does not contain the mapped key.
+        """
         ident = metric.lower()
         json_key = _METRIC_KEY_MAP.get(ident)
         if json_key is None:
@@ -97,6 +126,14 @@ class MetricsAggregator:
         return self.fetch_metric(metric)
 
     def collect_lte(self) -> dict[str, Any]:
+        """
+        Builds an aggregated dictionary of LTE metrics by extracting and coercing values from the router payload.
+        
+        Missing metrics are skipped and a warning is logged for each absent metric.
+        
+        Returns:
+            dict[str, Any]: Mapping of output metric keys to coerced metric values.
+        """
         payload = self._load_payload()
         aggregate: dict[str, Any] = {}
         for output_key, metric_ident in _LTE_OUTPUT_KEYS.items():
@@ -109,6 +146,15 @@ class MetricsAggregator:
         return aggregate
 
     def _load_payload(self) -> dict[str, Any]:
+        """
+        Load the router metrics payload and return it as a mapping from payload keys to values.
+        
+        Returns:
+            dict[str, Any]: Dictionary mapping router JSON payload keys to their values.
+        
+        Raises:
+            RuntimeError: If the router response is not a dictionary.
+        """
         metrics_cmd = ",".join(_QUERY_FIELDS)
         path = f"/goform/goform_get_cmd_process?cmd={metrics_cmd}&multi_data=1"
         data = self._client.request(path, method="GET", expects="json")
