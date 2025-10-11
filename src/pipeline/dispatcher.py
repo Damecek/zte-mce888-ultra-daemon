@@ -44,18 +44,15 @@ class Dispatcher:
     def handle_request(self, topic: str, payload: bytes | None = None) -> None:
         del payload  # Requests are signaled via topic only
         try:
-            request = MetricRequest.from_topic(topic)
+            # Parse with known root and support nested metric paths like
+            # zte/lte/rsrp1/get -> metric 'lte.rsrp1'
+            request = MetricRequest.from_topic_for_root(topic, self._config.root_topic)
         except ValueError:
             self._logger.warning("Ignoring invalid request topic", extra={"topic": topic})
             self.state.record_failure()
             return
 
-        if request.root != self._config.root_topic:
-            self._logger.debug(
-                "Ignoring request for different root",
-                extra={"topic": topic, "expected_root": self._config.root_topic},
-            )
-            return
+        # Root is validated during parsing; no separate mismatch branch needed.
 
         self.state.record_request(request.topic)
         response_topic = topics.build_response_topic(self._config.root_topic, request.metric)

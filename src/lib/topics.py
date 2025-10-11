@@ -27,8 +27,14 @@ def build_request_topic(root: str, metric: str) -> str:
 
 def build_response_topic(root: str, metric: str) -> str:
     root_norm = normalize_topic(root)
-    metric_norm = _normalize_segment(metric)
-    return f"{root_norm}/{metric_norm}"
+    # Support nested metric identifiers separated by '.' by mapping them to
+    # path segments in the response topic so that a request like
+    #   zte/lte/rsrp1/get
+    # yields a response published to
+    #   zte/lte/rsrp1
+    # Single-segment metrics (e.g., 'provider') are preserved as-is.
+    metric_path = "/".join(_normalize_segment(part) for part in metric.split("."))
+    return f"{root_norm}/{metric_path}"
 
 
 @dataclass(slots=True)
@@ -57,6 +63,41 @@ def parse_request_topic(topic: str) -> ParsedTopic:
     )
 
 
+def parse_request_topic_for_root(topic: str, root: str) -> ParsedTopic:
+    """Parse a request topic using a known root prefix.
+
+    Supports nested metric paths (e.g., 'lte/rsrp1') which are converted to
+    dot-separated identifiers (e.g., 'lte.rsrp1') to align with the CLI/read
+    mapping used throughout the codebase.
+    """
+    normalized = normalize_topic(topic)
+    root_norm = normalize_topic(root)
+    parts = normalized.split("/")
+    root_parts = root_norm.split("/")
+
+    if len(parts) < 3 or parts[-1] != "get":
+        raise ValueError(f"Unsupported request topic: {topic}")
+
+    # Require the topic to start with the expected root prefix
+    if parts[: len(root_parts)] != root_parts:
+        raise ValueError("Request topic does not match expected root prefix")
+
+    metric_parts = parts[len(root_parts) : -1]
+    if not metric_parts:
+        raise ValueError("Request topic must include a metric segment")
+
+    # Join nested path to a dot-identifier used by metrics map
+    metric_ident = ".".join(metric_parts)
+    is_aggregate = metric_ident == "lte"
+
+    return ParsedTopic(
+        request_topic=normalized,
+        root=root_norm,
+        metric=metric_ident,
+        is_aggregate=is_aggregate,
+    )
+
+
 def response_topic_from_request(topic: str) -> str:
     parsed = parse_request_topic(topic)
     return build_response_topic(parsed.root, parsed.metric)
@@ -67,6 +108,7 @@ __all__ = [
     "build_request_topic",
     "build_response_topic",
     "normalize_topic",
+    "parse_request_topic_for_root",
     "parse_request_topic",
     "response_topic_from_request",
 ]

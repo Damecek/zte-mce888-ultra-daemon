@@ -8,7 +8,6 @@ from collections.abc import Awaitable, Callable
 
 from gmqtt import Client as GMQTTClient
 
-from lib import topics
 from models.mqtt_config import MQTTConfig
 from models.publish_envelope import PublishEnvelope
 
@@ -79,11 +78,14 @@ class MQTTClient:
     def _on_connect(self, client: GMQTTClient, flags: dict[str, int], rc: int, properties: object | None) -> None:
         del client, flags, rc, properties
         root = self._config.root_topic
-        request_pattern = topics.build_request_topic(root, "+")
-        lte_topic = topics.build_request_topic(root, "lte")
+        # Subscribe to all request topics under the configured root. We'll
+        # filter to only '/get' messages in the dispatcher.
+        request_pattern = f"{root}/#"
         self._client.subscribe(request_pattern, qos=self._config.qos)
-        self._client.subscribe(lte_topic, qos=self._config.qos)
-        self._logger.info("Subscribed to MQTT request topics", extra={"pattern": request_pattern})
+        self._logger.info(
+            "Subscribed to MQTT request topics",
+            extra={"pattern": request_pattern},
+        )
         self._connected_event.set()
 
     def _on_disconnect(self, client: GMQTTClient, packet: object, exc: Exception | None = None) -> None:
