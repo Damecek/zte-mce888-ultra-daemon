@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import click
 
 from lib.logging_setup import get_logger, logging_options
@@ -24,12 +26,18 @@ See docs/metrics.md for the full catalog and naming rules.""",
 @click.argument("metric", metavar="METRIC")
 @router_options()
 @logging_options(help_text="Log level for stdout output")
+@click.option(
+    "--listen",
+    is_flag=True,
+    help="Continuously read the metric every second until interrupted.",
+)
 def read_command(
     metric: str,
     router_host: str,
     router_password: str,
     log_level: str,
     log_file: str | None,
+    listen: bool,
 ) -> str:
     """Read a router metric from the router via REST.
 
@@ -130,52 +138,68 @@ def read_command(
                 "nr5g_nsa_band_lock,pm_sensor_ambient,pm_sensor_mdm,pm_sensor_5g,pm_sensor_pa1,wifi_chip_temp"
             )
             path = f"/goform/goform_get_cmd_process?cmd={metrics_cmd}&multi_data=1"
-            data = client.request(path, method="GET", expects="json")
-            logger.debug(f"Received data: {data}")
 
-            # Neighbors: map to ngbr_cell_info → parsed list of objects
-            if ident_norm.startswith("neighbors"):
-                raw = data.get("ngbr_cell_info")
-                neighbors = _parse_neighbors(raw)
-                if ident_norm == "neighbors":
+            def emit_from_payload(data: dict[str, object]) -> None:
+                logger.debug(f"Received data: {data}")
+                # Neighbors: map to ngbr_cell_info → parsed list of objects
+                if ident_norm.startswith("neighbors"):
+                    raw = data.get("ngbr_cell_info")
+                    neighbors = _parse_neighbors(raw)
+                    if ident_norm == "neighbors":
+                        import json as _json
+
+                        click.echo(_json.dumps(neighbors))
+                        return
+
+                    import re as _re
+
+                    m = _re.fullmatch(r"neighbors\[(\d+)\](?:\.(\w+))?", ident_norm)
+                    if not m:
+                        raise click.ClickException(
+                            "Unsupported neighbors selector. Use 'neighbors', 'neighbors[0]' or 'neighbors[0].field'."
+                        )
+                    idx = int(m.group(1))
+                    field = m.group(2)
+                    if idx < 0 or idx >= len(neighbors):
+                        raise click.ClickException(f"Neighbor index out of range: {idx} (available: {len(neighbors)})")
+                    item = neighbors[idx]
+                    if field:
+                        if field not in item:
+                            raise click.ClickException(
+                                f"Unknown neighbor field: {field}. Available: {sorted(item.keys())}"
+                            )
+                        click.echo(f"{item[field]}")
+                        return
                     import json as _json
 
-                    click.echo(_json.dumps(neighbors))
-                    return ident
+                    click.echo(_json.dumps(item))
+                    return
 
-                import re as _re
-
-                m = _re.fullmatch(r"neighbors\[(\d+)\](?:\.(\w+))?", ident_norm)
-                if not m:
+                # Resolve identifier using LIVE_MAP
+                json_key = LIVE_MAP.get(ident_norm)
+                if json_key is None:
                     raise click.ClickException(
-                        "Unsupported neighbors selector. Use 'neighbors', 'neighbors[0]' or 'neighbors[0].field'."
+                        f"Unknown metric identifier: {ident}. See docs/metrics.md for supported identifiers."
                     )
-                idx = int(m.group(1))
-                field = m.group(2)
-                if idx < 0 or idx >= len(neighbors):
-                    raise click.ClickException(f"Neighbor index out of range: {idx} (available: {len(neighbors)})")
-                item = neighbors[idx]
-                if field:
-                    if field not in item:
-                        raise click.ClickException(f"Unknown neighbor field: {field}. Available: {sorted(item.keys())}")
-                    click.echo(f"{item[field]}")
+                nonlocal live_value
+                live_value = data.get(json_key)
+                if live_value is None:
+                    raise click.ClickException(f"No value for '{ident}' in router response (missing '{json_key}').")
+                click.echo(f"{ident}: {live_value}")
+
+            if listen:
+                try:
+                    while True:
+                        payload = client.request(path, method="GET", expects="json")
+                        emit_from_payload(payload)
+                        time.sleep(1)
+                except KeyboardInterrupt:
+                    # Graceful shutdown on Ctrl-C
                     return ident
-                import json as _json
-
-                click.echo(_json.dumps(item))
+            else:
+                data = client.request(path, method="GET", expects="json")
+                emit_from_payload(data)
                 return ident
-
-            # Resolve identifier using LIVE_MAP
-            json_key = LIVE_MAP.get(ident_norm)
-            if json_key is None:
-                raise click.ClickException(
-                    f"Unknown metric identifier: {ident}. See docs/metrics.md for supported identifiers."
-                )
-            live_value = data.get(json_key)
-            if live_value is None:
-                raise click.ClickException(f"No value for '{ident}' in router response (missing '{json_key}').")
-            click.echo(f"{ident}: {live_value}")
-            return ident
         except zte_client.ZTEClientError as exc:
             raise click.ClickException(str(exc)) from exc
 
