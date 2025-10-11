@@ -1,100 +1,139 @@
-"""Implementation of the `zte run` command (flattened src layout)."""
-
 from __future__ import annotations
+
+import asyncio
+import signal
 
 import click
 
 from lib.logging_setup import get_logger, logging_options
 from lib.options import router_options
+from models.daemon_state import DaemonState
+from models.mqtt_config import MQTTConfig
+from models.router_config import RouterConfig
+from pipeline.dispatcher import Dispatcher
 from services import zte_client
-from services.modem_mock import MockModemClient, ModemFixtureError
-from services.mqtt_mock import MockMQTTBroker
+from services.metrics_aggregator import MetricsAggregator
+from services.mqtt_client import MQTTClient
 
 
-def _derive_device_id(host: str) -> str:
-    # Strip scheme and trailing slash for ID derivation
-    host_part = host.split("://")[-1].rstrip("/")
-    return f"zte-{host_part.replace('.', '-')}-mock"
-
-
-@click.command(name="run")
-@router_options(default_host="192.168.0.1")
-@logging_options(help_text="Log level for stdout and file handlers")
-@click.option(
-    "foreground",
-    "--foreground",
-    is_flag=True,
-    default=False,
-    help="Run in foreground (runs in background by default).",
-)
-@click.option("mqtt_host", "--mqtt-host", help="Placeholder broker address (stored but not contacted).")
-@click.option(
-    "mqtt_topic",
-    "--mqtt-topic",
-    default="zte-modem",
-    show_default=False,
-    help="Topic used in mock publish [default: zte-modem]",
-)
-@click.option("mqtt_user", "--mqtt-user", help="MQTT username placeholder.")
-@click.option("mqtt_password", "--mqtt-password", help="MQTT password placeholder (never logged).")
-@click.option(
-    "rest_test",
-    "--rest-test",
-    is_flag=True,
-    default=False,
-    help="Attempt a minimal REST client login + fetch before mock publish (test mode).",
-)
-def run_command(
+async def _run_daemon(
     *,
     router_host: str,
     router_password: str,
     log_level: str,
-    foreground: bool,
     log_file: str | None,
-    mqtt_host: str | None,
-    mqtt_topic: str,
-    mqtt_user: str | None,
+    mqtt_host: str,
+    mqtt_port: int,
+    mqtt_username: str | None,
     mqtt_password: str | None,
-    rest_test: bool,
-) -> dict[str, object]:
-    """Run the ZTE router daemon with mocked MQTT publish loop."""
+    mqtt_topic: str,
+    foreground: bool,
+) -> None:
     logger = get_logger(log_level, log_file)
-    device_id = _derive_device_id(router_host)
-    logger.info(f"Starting mocked daemon run (foreground={foreground}, device_id={device_id})")
+    router_config = RouterConfig(host=router_host, password=router_password)
+    mqtt_config = MQTTConfig(
+        host=mqtt_host,
+        port=mqtt_port,
+        username=mqtt_username,
+        password=mqtt_password,
+        root_topic=mqtt_topic,
+    )
+    state = DaemonState()
 
-    # Optional: exercise REST client in a minimal way for test-mode verification
-    if rest_test:
-        try:
-            client = zte_client.ZTEClient(router_host)
-            client.login(router_password)
-            # Lightweight GET against a benign endpoint to verify session
-            client.request(
-                "/goform/goform_get_cmd_process?isTest=false&cmd=lan_station_list",
-                method="GET",
-                expects="json",
-            )
-            logger.info("REST client test-mode fetch succeeded")
-        except zte_client.ZTEClientError as exc:
-            raise click.ClickException(f"REST test-mode failed: {exc}") from exc
+    logger.info(
+        "Starting ZTE daemon",
+        extra={
+            "router_host": router_config.host,
+            "mqtt_host": mqtt_config.host,
+            "mqtt_port": mqtt_config.port,
+            "root_topic": mqtt_config.root_topic,
+            "foreground": foreground,
+        },
+    )
 
-    modem = MockModemClient()
+    client = zte_client.ZTEClient(router_config.host)
     try:
-        snapshot = modem.load_snapshot()
-    except ModemFixtureError as exc:
-        raise click.ClickException(str(exc)) from exc
+        client.login(router_config.password)
+    except zte_client.ZTEClientError as exc:
+        raise click.ClickException(f"Failed to authenticate with router: {exc}") from exc
 
-    click.echo(f"Router snapshot timestamp: {snapshot.timestamp}")
-    click.echo(f"RSRP: {snapshot.rsrp} dBm | Provider: {snapshot.provider}")
+    aggregator = MetricsAggregator(client)
+    mqtt_client = MQTTClient(mqtt_config)
+    dispatcher = Dispatcher(
+        mqtt_config=mqtt_config,
+        metric_reader=aggregator,
+        aggregator=aggregator,
+        mqtt_client=mqtt_client,
+        state=state,
+    )
+    mqtt_client.set_message_handler(lambda topic, payload: dispatcher.handle_request(topic, payload))
 
-    broker = MockMQTTBroker(device_id=device_id)
-    record = broker.publish(snapshot, topic=mqtt_topic, broker_host=mqtt_host)
-    logger.info(f"Recorded MQTT payload to mock broker (topic={mqtt_topic}, broker={mqtt_host or 'mock-default'})")
-    click.echo("Recorded MQTT payload to mock broker for offline inspection.")
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for signame in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(signame, stop_event.set)
 
-    return {
-        "topic": record.topic,
-        "payload": record.payload,
-        "device_id": broker.device_id,
-        "log_file": log_file,
-        "mqtt_user": mqtt_user,
-    }
+    try:
+        while not stop_event.is_set():
+            try:
+                await mqtt_client.connect()
+                state.mark_connected()
+                await asyncio.wait(
+                    [stop_event.wait(), mqtt_client.wait_for_disconnect()],
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:  # pragma: no cover - defensive loop
+                logger.exception("MQTT loop error", exc_info=exc)
+                state.record_failure()
+            finally:
+                state.mark_disconnected()
+                await mqtt_client.disconnect()
+                if not stop_event.is_set():
+                    await asyncio.sleep(mqtt_config.reconnect_seconds)
+    finally:
+        client.close()
+        logger.info("Daemon stopped", extra={"failures": state.failures})
+
+
+@click.command(name="run")
+@router_options(default_host="http://192.168.0.1")
+@logging_options(help_text="Log level for stdout and file handlers")
+@click.option("foreground", "--foreground", is_flag=True, help="Run in foreground (default).")
+@click.option("mqtt_host", "--mqtt-host", required=True, help="MQTT broker hostname or IP address.")
+@click.option("mqtt_port", "--mqtt-port", default=1883, show_default=True, type=int, help="MQTT broker port")
+@click.option("mqtt_username", "--mqtt-username", help="MQTT username if authentication is required.")
+@click.option("mqtt_password", "--mqtt-password", help="MQTT password if authentication is required.")
+@click.option("mqtt_topic", "--mqtt-topic", default="zte", show_default=True, help="Root topic for requests.")
+def run_command(
+    router_host: str,
+    router_password: str,
+    log_level: str,
+    log_file: str | None,
+    foreground: bool,
+    mqtt_host: str,
+    mqtt_port: int,
+    mqtt_username: str | None,
+    mqtt_password: str | None,
+    mqtt_topic: str,
+) -> None:
+    """Run the ZTE router daemon that responds to MQTT metric requests."""
+
+    try:
+        asyncio.run(
+            _run_daemon(
+                router_host=router_host,
+                router_password=router_password,
+                log_level=log_level,
+                log_file=log_file,
+                mqtt_host=mqtt_host,
+                mqtt_port=mqtt_port,
+                mqtt_username=mqtt_username,
+                mqtt_password=mqtt_password,
+                mqtt_topic=mqtt_topic,
+                foreground=foreground,
+            )
+        )
+    except KeyboardInterrupt:  # pragma: no cover - interactive flow
+        pass

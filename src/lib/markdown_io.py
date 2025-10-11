@@ -10,13 +10,13 @@ from typing import Any
 def _format_payload(payload: Any) -> str:
     if payload is None:
         return "null"
-    if isinstance(payload, (dict, list)):
+    if isinstance(payload, dict | list):
         return json.dumps(payload, indent=2, sort_keys=True)
     return str(payload)
 
 
 def _format_response(response: Any) -> str:
-    if isinstance(response, (dict, list)):
+    if isinstance(response, dict | list):
         return json.dumps(response, indent=2, sort_keys=True)
     return str(response)
 

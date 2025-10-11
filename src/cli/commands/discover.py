@@ -90,7 +90,7 @@ def discover_command(
         click.echo(str(target_path))
         return
 
-    if isinstance(response, (dict, list)):
+    if isinstance(response, dict | list):
         click.echo(json.dumps(response, indent=2, sort_keys=True))
     else:
         click.echo(response)

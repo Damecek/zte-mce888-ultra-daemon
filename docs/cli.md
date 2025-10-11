@@ -16,7 +16,7 @@ Options:
 Commands:
   discover  Invoke router REST endpoints and capture responses
   read      Read a router metric by identifier.
-  run       Run the ZTE router daemon with mocked MQTT publish loop.
+  run       Run the ZTE router daemon that responds to MQTT metric requests.
 ```
 
 ## zte discover --help
@@ -69,24 +69,21 @@ Options:
 ```text
 Usage: zte run [OPTIONS]
 
-  Run the ZTE router daemon with mocked MQTT publish loop.
+  Run the ZTE router daemon that responds to MQTT metric requests.
 
 Options:
-  --router-host TEXT             Router host URL  [default: 192.168.0.1;
+  --router-host TEXT             Router host URL  [default: http://192.168.0.1;
                                  required]
   --router-password TEXT         Router admin password  [required]
   --log [debug|info|warn|error]  Log level for stdout and file handlers
                                  [default: warn]
   --log-file PATH                Optional log file destination (ensures parent
                                  dir exists).
-  --foreground                   Run in foreground (runs in background by
-                                 default).
-  --mqtt-host TEXT               Placeholder broker address (stored but not
-                                 contacted).
-  --mqtt-topic TEXT              Topic used in mock publish [default: zte-modem]
-  --mqtt-user TEXT               MQTT username placeholder.
-  --mqtt-password TEXT           MQTT password placeholder (never logged).
-  --rest-test                    Attempt a minimal REST client login + fetch
-                                 before mock publish (test mode).
+  --foreground                   Run in foreground (default).
+  --mqtt-host TEXT               MQTT broker hostname or IP address.  [required]
+  --mqtt-port INTEGER            MQTT broker port  [default: 1883]
+  --mqtt-username TEXT           MQTT username if authentication is required.
+  --mqtt-password TEXT           MQTT password if authentication is required.
+  --mqtt-topic TEXT              Root topic for requests.  [default: zte]
   --help                         Show this message and exit.
 ```

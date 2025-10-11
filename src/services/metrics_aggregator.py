@@ -1,0 +1,120 @@
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from services import zte_client
+
+# Mapping between daemon metric identifiers and modem JSON payload keys.
+_METRIC_KEY_MAP: dict[str, str] = {
+    # LTE signal metrics
+    "lte.rsrp1": "lte_rsrp_1",
+    "lte.rsrp2": "lte_rsrp_2",
+    "lte.rsrp3": "lte_rsrp_3",
+    "lte.rsrp4": "lte_rsrp_4",
+    "lte.sinr1": "lte_snr_1",
+    "lte.sinr2": "lte_snr_2",
+    "lte.sinr3": "lte_snr_3",
+    "lte.sinr4": "lte_snr_4",
+    "lte.rsrq": "lte_rsrq",
+    "lte.rssi": "lte_rssi",
+    "lte.earfcn": "lte_ca_pcell_freq",
+    "lte.pci": "lte_pci",
+    "lte.bw": "lte_ca_pcell_bandwidth",
+    # Provider / top level
+    "provider": "network_provider_fullname",
+    "cell": "cell_id",
+    "connection": "network_type",
+    "bands": "wan_active_band",
+    "wan_ip": "wan_ipaddr",
+    # NR/5G metrics
+    "nr5g.rsrp1": "5g_rx0_rsrp",
+    "nr5g.rsrp2": "5g_rx1_rsrp",
+    "nr5g.sinr": "Z5g_SINR",
+    "nr5g.pci": "nr5g_pci",
+    "nr5g.arfcn": "nr5g_action_channel",
+    # Temperature sensors
+    "temp.a": "pm_sensor_ambient",
+    "temp.m": "pm_sensor_mdm",
+    "temp.p": "pm_sensor_pa1",
+}
+
+_LTE_OUTPUT_KEYS: dict[str, str] = {
+    "rsrp1": "lte.rsrp1",
+    "rsrp2": "lte.rsrp2",
+    "rsrp3": "lte.rsrp3",
+    "rsrp4": "lte.rsrp4",
+    "sinr1": "lte.sinr1",
+    "sinr2": "lte.sinr2",
+    "sinr3": "lte.sinr3",
+    "sinr4": "lte.sinr4",
+    "rsrq": "lte.rsrq",
+    "rssi": "lte.rssi",
+    "earfcn": "lte.earfcn",
+    "pci": "lte.pci",
+    "bw": "lte.bw",
+}
+
+# Combine required payload keys for query construction.
+_QUERY_FIELDS = sorted({key for key in _METRIC_KEY_MAP.values()})
+
+
+def _coerce(value: Any) -> Any:
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return text
+        try:
+            if "." in text:
+                return float(text)
+            return int(text)
+        except ValueError:
+            return text
+    return value
+
+
+class MetricsAggregator:
+    """Provides single metric lookups and LTE aggregate payloads."""
+
+    def __init__(self, client: zte_client.ZTEClient, logger: logging.Logger | None = None) -> None:
+        self._client = client
+        self._logger = logger or logging.getLogger("zte_daemon.metrics_aggregator")
+
+    def fetch_metric(self, metric: str) -> Any:
+        ident = metric.lower()
+        json_key = _METRIC_KEY_MAP.get(ident)
+        if json_key is None:
+            raise KeyError(metric)
+        payload = self._load_payload()
+        value = payload.get(json_key)
+        if value is None:
+            raise KeyError(metric)
+        return _coerce(value)
+
+    def fetch(self, metric: str) -> Any:
+        """Alias used by the dispatcher for single metric lookups."""
+
+        return self.fetch_metric(metric)
+
+    def collect_lte(self) -> dict[str, Any]:
+        payload = self._load_payload()
+        aggregate: dict[str, Any] = {}
+        for output_key, metric_ident in _LTE_OUTPUT_KEYS.items():
+            json_key = _METRIC_KEY_MAP[metric_ident]
+            raw = payload.get(json_key)
+            if raw is None:
+                self._logger.warning("Missing LTE metric", extra={"metric": metric_ident})
+                continue
+            aggregate[output_key] = _coerce(raw)
+        return aggregate
+
+    def _load_payload(self) -> dict[str, Any]:
+        metrics_cmd = ",".join(_QUERY_FIELDS)
+        path = f"/goform/goform_get_cmd_process?cmd={metrics_cmd}&multi_data=1"
+        data = self._client.request(path, method="GET", expects="json")
+        if not isinstance(data, dict):
+            raise RuntimeError("Unexpected payload type from router")
+        return data
+
+
+__all__ = ["MetricsAggregator"]

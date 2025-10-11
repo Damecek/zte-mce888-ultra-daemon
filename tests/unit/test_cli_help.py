@@ -18,7 +18,7 @@ def test_top_level_help_includes_commands(runner: CliRunner) -> None:
     assert "Usage: zte [OPTIONS] COMMAND [ARGS]..." in output
     assert "--version  Show the version and exit." in output
     assert re.search(
-        r"^\s*run\s+Run the ZTE router daemon with mocked MQTT publish loop\.",
+        r"^\s*run\s+Run the ZTE router daemon that responds to MQTT metric requests\.",
         output,
         flags=re.M,
     )
@@ -40,18 +40,18 @@ def test_run_command_help_matches_contract(runner: CliRunner) -> None:
     assert "Log level for stdout and file handlers" in output
     assert "[default: warn]" in output
     assert "--foreground" in output
-    assert "Run in foreground (runs in background" in output
+    assert "Run in foreground (default)." in output
     assert "--log-file PATH" in output
     assert "Optional log file destination" in output
     assert "--mqtt-host TEXT" in output
-    assert "Placeholder broker address" in output
+    assert "MQTT broker hostname or IP address." in output
     assert "--mqtt-topic TEXT" in output
-    assert "Topic used in mock publish" in output
-    assert "[default: zte-modem]" in output
-    assert "--mqtt-user TEXT" in output
-    assert "MQTT username placeholder." in output
+    assert "Root topic for requests." in output
+    assert "[default: zte]" in output
+    assert "--mqtt-username TEXT" in output
+    assert "MQTT username if authentication is required." in output
     assert "--mqtt-password TEXT" in output
-    assert "MQTT password placeholder (never logged)." in output
+    assert "MQTT password if authentication is required." in output
 
 
 def test_read_command_help_matches_contract(runner: CliRunner) -> None:

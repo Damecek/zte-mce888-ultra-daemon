@@ -209,7 +209,7 @@ class ZTEClient:
         if resolved_method.upper() == "GET" and payload is not None:
             request_kwargs["params"] = payload if isinstance(payload, dict) else payload
         elif payload is not None:
-            if isinstance(payload, (dict, list)):
+            if isinstance(payload, dict | list):
                 request_kwargs["json"] = payload
             else:
                 request_kwargs["content"] = payload
