@@ -78,10 +78,19 @@ async def _run_daemon(
             try:
                 await mqtt_client.connect()
                 state.mark_connected()
-                await asyncio.wait(
-                    [stop_event.wait(), mqtt_client.wait_for_disconnect()],
-                    return_when=asyncio.FIRST_COMPLETED,
-                )
+                # asyncio.wait() requires Tasks/Futures, not bare coroutines
+                stop_task = asyncio.create_task(stop_event.wait())
+                disconnect_task = asyncio.create_task(mqtt_client.wait_for_disconnect())
+                try:
+                    await asyncio.wait(
+                        [stop_task, disconnect_task],
+                        return_when=asyncio.FIRST_COMPLETED,
+                    )
+                finally:
+                    # Ensure we don't leak tasks when loop iteration ends
+                    for t in (stop_task, disconnect_task):
+                        if not t.done():
+                            t.cancel()
             except asyncio.CancelledError:
                 raise
             except Exception as exc:  # pragma: no cover - defensive loop

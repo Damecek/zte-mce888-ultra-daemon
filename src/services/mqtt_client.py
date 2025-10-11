@@ -51,12 +51,14 @@ class MQTTClient:
             extra={"host": self._config.host, "port": self._config.port, "root": self._config.root_topic},
         )
         self._disconnect_event.clear()
+        # gmqtt does not accept username/password in connect(); set explicitly
+        if self._config.username is not None:
+            # Empty password is allowed; gmqtt handles None/empty internally
+            self._client.set_auth_credentials(self._config.username, self._config.password or "")
         await self._client.connect(
             self._config.host,
             port=self._config.port,
-            keepalive=None,
-            username=self._config.username,
-            password=self._config.password,
+            keepalive=60,
         )
         await self._connected_event.wait()
 
