@@ -169,6 +169,32 @@ class MetricsAggregator:
 
         return out
 
+    def collect_nr5g(self) -> dict[str, Any]:
+        payload = self._load_payload()
+        out: dict[str, Any] = {}
+        for key, ident in (
+            ("rsrp1", "nr5g.rsrp1"),
+            ("rsrp2", "nr5g.rsrp2"),
+            ("sinr", "nr5g.sinr"),
+            ("pci", "nr5g.pci"),
+            ("arfcn", "nr5g.arfcn"),
+        ):
+            raw = payload.get(_METRIC_KEY_MAP[ident])
+            if raw is None:
+                continue
+            out[key] = _coerce(raw)
+        return out
+
+    def collect_temp(self) -> dict[str, Any]:
+        payload = self._load_payload()
+        out: dict[str, Any] = {}
+        for key, ident in (("a", "temp.a"), ("m", "temp.m"), ("p", "temp.p")):
+            raw = payload.get(_METRIC_KEY_MAP[ident])
+            if raw is None:
+                continue
+            out[key] = _coerce(raw)
+        return out
+
     def _load_payload(self) -> dict[str, Any]:
         metrics_cmd = ",".join(_QUERY_FIELDS)
         path = f"/goform/goform_get_cmd_process?cmd={metrics_cmd}&multi_data=1"

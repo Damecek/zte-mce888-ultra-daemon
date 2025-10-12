@@ -21,6 +21,10 @@ class Aggregator(Protocol):
         ...
     def collect_all(self) -> dict[str, Any]:  # pragma: no cover - protocol definition
         ...
+    def collect_nr5g(self) -> dict[str, Any]:  # pragma: no cover - protocol definition
+        ...
+    def collect_temp(self) -> dict[str, Any]:  # pragma: no cover - protocol definition
+        ...
 
 
 class Dispatcher:
@@ -59,17 +63,44 @@ class Dispatcher:
         self.state.record_request(request.topic)
         response_topic = topics.build_response_topic(self._config.root_topic, request.metric)
 
+        def _is_empty_value(value: Any) -> bool:
+            if value is None:
+                return True
+            if isinstance(value, str):
+                return value.strip() == ""
+            if isinstance(value, dict):
+                # Empty if all nested values are empty by this same rule
+                return all(_is_empty_value(v) for v in value.values())
+            if isinstance(value, (list, tuple, set)):
+                return all(_is_empty_value(v) for v in value)
+            return False
+
         try:
             if request.is_aggregate:
                 if request.metric == "lte":
                     payload_obj = self.aggregator.collect_lte()
+                elif request.metric == "nr5g":
+                    payload_obj = self.aggregator.collect_nr5g()
+                elif request.metric == "temp":
+                    payload_obj = self.aggregator.collect_temp()
                 else:  # "zte" top-level aggregate
                     payload_obj = self.aggregator.collect_all()
-                if not payload_obj:
-                    self._logger.warning("Aggregate request produced no data", extra={"topic": topic})
+                # Guard: skip publish on effectively empty aggregates
+                if not payload_obj or _is_empty_value(payload_obj):
+                    self._logger.error(
+                        "Aggregate request produced empty data; skipping publish",
+                        extra={"topic": topic, "metric": request.metric},
+                    )
                     return
             else:
                 payload_obj = self.metric_reader.fetch(request.metric)
+                # Guard: skip publish on empty single value
+                if _is_empty_value(payload_obj):
+                    self._logger.error(
+                        "Metric value empty; skipping publish",
+                        extra={"topic": topic, "metric": request.metric},
+                    )
+                    return
         except KeyError:
             self._logger.warning("Requested metric unavailable", extra={"metric": request.metric})
             self.state.record_failure()

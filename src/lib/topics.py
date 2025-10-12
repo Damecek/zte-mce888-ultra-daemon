@@ -91,7 +91,7 @@ def parse_request_topic_for_root(topic: str, root: str) -> ParsedTopic:
         # Join nested path to a dot-identifier used by metrics map
         metric_ident = ".".join(metric_parts)
 
-    is_aggregate = metric_ident in {"lte", "zte"}
+    is_aggregate = metric_ident in {"lte", "nr5g", "temp", "zte"}
 
     return ParsedTopic(
         request_topic=normalized,

@@ -239,12 +239,34 @@ class ZTEClient:
         if not response.is_success:
             raise RequestError(f"Unexpected status code: {response.status_code}")
 
+        # Emit REST response details at debug level to aid troubleshooting
+        try:
+            preview_text = response.text
+        except Exception:  # pragma: no cover - defensive
+            preview_text = "<unavailable>"
+        # Include status and a short body preview directly in the message so
+        # it shows with default logging formatters.
+        preview = preview_text[:500] if isinstance(preview_text, str) else "<unavailable>"
+        body_len = len(preview_text) if isinstance(preview_text, str) else "n/a"
+        msg = f"REST response received status={response.status_code} body_len={body_len}"
+        # Log preview separately to keep line length within limits
+        self._logger.debug(msg)
+        self._logger.debug(f"REST response preview={preview!r}")
+
         if expects == "json":
             try:
-                return response.json()
+                parsed = response.json()
             except json.JSONDecodeError as exc:
                 raise ResponseParseError("Failed to decode JSON response") from exc
-        return response.text
+            # Also log JSON keys for quick visibility
+            if isinstance(parsed, dict):
+                try:
+                    keys_preview = ", ".join(list(sorted(parsed.keys()))[:50])
+                    self._logger.debug(f"Parsed JSON payload keys=[{keys_preview}]")
+                except Exception:  # pragma: no cover - defensive
+                    pass
+            return parsed
+        return preview_text
 
     def __enter__(self) -> ZTEClient:  # pragma: no cover - convenience
         return self
