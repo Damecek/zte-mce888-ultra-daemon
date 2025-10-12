@@ -18,7 +18,7 @@ def test_top_level_help_includes_commands(runner: CliRunner) -> None:
     assert "Usage: zte [OPTIONS] COMMAND [ARGS]..." in output
     assert "--version  Show the version and exit." in output
     assert re.search(
-        r"^\s*run\s+Run the ZTE router daemon that responds to MQTT metric requests\.",
+        r"^\s*run\s+Start the ZTE router daemon and run its MQTT-driven event loop\.",
         output,
         flags=re.M,
     )
@@ -28,8 +28,10 @@ def test_top_level_help_includes_commands(runner: CliRunner) -> None:
 def test_run_command_help_matches_contract(runner: CliRunner) -> None:
     """
     Verify the 'run' subcommand help output exposes the expected usage, options, and help text.
-    
-    Asserts that the help for `zte run` includes the usage line, router connection options and their descriptions (including required marker for the password), logging options with defaults, foreground and log-file options, and MQTT-related options and descriptions.
+
+    Asserts that the help for `zte run` includes the usage line, router connection options and
+    their descriptions (including required marker for the password), logging options with
+    defaults, foreground and log-file options, and MQTT-related options and descriptions.
     """
     result = runner.invoke(cli, ["run", "--help"])
     assert result.exit_code == 0
@@ -51,8 +53,9 @@ def test_run_command_help_matches_contract(runner: CliRunner) -> None:
     assert "--mqtt-host TEXT" in output
     assert "MQTT broker hostname or IP address." in output
     assert "--mqtt-topic TEXT" in output
-    assert "Root topic for requests." in output
-    assert "[default: zte]" in output
+    assert "Optional root prefix" in output
+    assert re.search(r"Effective request topics\s+are\s+'<root>/zte/\.\.\.'", output)
+    assert "'zte/...'" in output
     assert "--mqtt-username TEXT" in output
     assert "MQTT username if authentication is required." in output
     assert "--mqtt-password TEXT" in output

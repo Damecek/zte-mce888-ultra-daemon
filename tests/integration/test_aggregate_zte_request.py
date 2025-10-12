@@ -81,6 +81,6 @@ def test_top_level_aggregate_request_publishes_nested_object(
     assert mqtt_client.publishes, "aggregate publish expected"
 
     envelope = mqtt_client.publishes[0]
-    assert envelope.topic == "home/zte"
+    assert envelope.topic == "home/zte/zte"
     assert isinstance(envelope.payload, dict)
     assert "lte" in envelope.payload and "nr5g" in envelope.payload
