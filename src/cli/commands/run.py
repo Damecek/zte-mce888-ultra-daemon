@@ -29,6 +29,26 @@ async def _run_daemon(
     mqtt_topic: str | None,
     foreground: bool,
 ) -> None:
+    """
+    Start and run the ZTE daemon: authenticate to the router, maintain an MQTT connection, and dispatch metric requests until a termination signal is received.
+    
+    Parameters:
+        router_host (str): Hostname or IP address of the ZTE router to connect to.
+        router_password (str): Password used to authenticate with the router.
+        log_level (str): Logging level name (e.g., "INFO", "DEBUG").
+        log_file (str | None): Path to a log file, or None to log to stdout.
+        mqtt_host (str): MQTT broker hostname or IP address.
+        mqtt_port (int): MQTT broker TCP port.
+        mqtt_username (str | None): Username for MQTT authentication, or None if not used.
+        mqtt_password (str | None): Password for MQTT authentication, or None if not used.
+        mqtt_topic (str): Root MQTT topic used for publishing and subscribing.
+        foreground (bool): If true, run in the foreground; otherwise allow background-style operation.
+    
+    Side effects:
+        - Attempts to authenticate and maintain a persistent connection to the router and MQTT broker.
+        - Runs an event loop that responds to incoming MQTT messages and records connection failures.
+        - Stops only after receiving SIGINT or SIGTERM and performs cleanup (closing router client and MQTT client).
+    """
     logger = get_logger(log_level, log_file)
     router_config = RouterConfig(host=router_host, password=router_password)
     # Effective root topic always includes the 'zte' group.
@@ -138,7 +158,21 @@ def run_command(
     mqtt_password: str | None,
     mqtt_topic: str | None,
 ) -> None:
-    """Run the ZTE router daemon that responds to MQTT metric requests."""
+    """
+    Start the ZTE router daemon and run its MQTT-driven event loop.
+    
+    Parameters:
+    	router_host (str): Hostname or IP address of the ZTE router to connect to.
+    	router_password (str): Password used to authenticate with the router.
+    	log_level (str): Logging verbosity level (e.g., "DEBUG", "INFO").
+    	log_file (str | None): Optional path to a log file; if None logs go to stderr.
+    	foreground (bool): If True, run in the foreground instead of detaching.
+    	mqtt_host (str): MQTT broker hostname or IP address.
+    	mqtt_port (int): MQTT broker port.
+    	mqtt_username (str | None): Optional username for MQTT authentication.
+    	mqtt_password (str | None): Optional password for MQTT authentication.
+    	mqtt_topic (str): Root MQTT topic used for publishing and subscribing.
+    """
 
     try:
         asyncio.run(

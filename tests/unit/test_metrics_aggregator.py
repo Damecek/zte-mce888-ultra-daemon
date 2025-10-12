@@ -10,10 +10,27 @@ from services.metrics_aggregator import MetricsAggregator
 
 class StubClient:
     def __init__(self, payload: dict[str, Any]) -> None:
+        """
+        Initialize the stub client with a fixed response payload and a request call counter.
+        
+        Parameters:
+            payload (dict[str, Any]): Mapping used as the shallow-copied response returned by request().
+        """
         self.payload = payload
         self.calls: Counter[str] = Counter()
 
     def request(self, path: str, *, method: str, expects: str) -> dict[str, Any]:
+        """
+        Record a simulated request for the given path and return a shallow copy of the stored payload.
+        
+        Parameters:
+            path (str): The request path; increments the internal call counter for this path.
+            method (str): The HTTP method for the simulated request (accepted but ignored).
+            expects (str): The expected response format for the simulated request (accepted but ignored).
+        
+        Returns:
+            dict[str, Any]: A shallow copy of the client's stored payload.
+        """
         self.calls[path] += 1
         return dict(self.payload)
 

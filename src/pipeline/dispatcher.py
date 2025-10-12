@@ -13,11 +13,26 @@ from services import zte_client
 
 class MetricReader(Protocol):
     def fetch(self, metric: str) -> Any:  # pragma: no cover - protocol definition
+        """
+        Retrieve the current value for the specified metric.
+        
+        Parameters:
+            metric (str): The name of the metric to retrieve.
+        
+        Returns:
+            Any: The metric's value; the concrete type depends on the metric (e.g., number, string, mapping).
+        """
         ...
 
 
 class Aggregator(Protocol):
     def collect_lte(self) -> dict[str, Any]:  # pragma: no cover - protocol definition
+        """
+        Collect aggregated LTE metrics for publishing.
+        
+        Returns:
+            dict[str, Any]: A mapping of metric names to their aggregated values (may be empty).
+        """
         ...
     def collect_all(self) -> dict[str, Any]:  # pragma: no cover - protocol definition
         ...
@@ -40,6 +55,18 @@ class Dispatcher:
         state: DaemonState,
         logger: logging.Logger | None = None,
     ) -> None:
+        """
+        Initialize the Dispatcher with its required dependencies and an optional logger.
+        
+        Parameters:
+            mqtt_config (MQTTConfig): Configuration for MQTT topics and behavior.
+            metric_reader (MetricReader): Source for fetching individual metric values.
+            aggregator (Aggregator): Source for collecting aggregated metric data.
+            mqtt_client (Any): MQTT client used to publish responses.
+            state (DaemonState): Object used to record request and publish state.
+            logger (logging.Logger | None): Optional logger; a default logger named
+                "zte_daemon.dispatcher" is used if not provided.
+        """
         self._config = mqtt_config
         self.metric_reader = metric_reader
         self.aggregator = aggregator
@@ -48,6 +75,15 @@ class Dispatcher:
         self._logger = logger or logging.getLogger("zte_daemon.dispatcher")
 
     def handle_request(self, topic: str, payload: bytes | None = None) -> None:
+        """
+        Handle an incoming MQTT metric request identified by its topic.
+        
+        Parses the topic into a MetricRequest, validates it against the configured root topic, obtains the requested metric payload (single metric or aggregate), and publishes the response to the corresponding response topic. Records request, publish, and failure events in the daemon state and logs notable conditions (invalid topic, root mismatch, missing data, router errors).
+        
+        Parameters:
+        	topic (str): MQTT topic that encodes the metric request.
+        	payload (bytes | None): Ignored; requests are signaled via the topic only.
+        """
         del payload  # Requests are signaled via topic only
         try:
             # Parse with known root and support nested metric paths like

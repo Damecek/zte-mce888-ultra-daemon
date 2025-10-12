@@ -10,6 +10,12 @@ from cli.zte import cli
 
 @pytest.fixture()
 def runner() -> CliRunner:
+    """
+    Provide a pytest fixture that supplies a Click CliRunner for invoking CLI commands in tests.
+    
+    Returns:
+        CliRunner: A CliRunner instance for simulating command-line invocations.
+    """
     return CliRunner()
 
 
@@ -17,6 +23,14 @@ def test_run_command_invokes_async_daemon(monkeypatch: pytest.MonkeyPatch, runne
     calls: deque[dict[str, Any]] = deque()
 
     async def fake_run_daemon(**kwargs: Any) -> None:
+        """
+        Record received keyword arguments by appending them to the surrounding `calls` deque.
+        
+        Parameters:
+            **kwargs: Any
+                Keyword arguments representing a simulated daemon invocation; the full kwargs
+                mapping is appended to the module-scoped `calls` deque as a single entry.
+        """
         calls.append(kwargs)
 
     monkeypatch.setattr(run_module, "_run_daemon", fake_run_daemon)
