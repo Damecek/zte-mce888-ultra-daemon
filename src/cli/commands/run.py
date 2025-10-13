@@ -66,14 +66,12 @@ async def _run_daemon(
     state = DaemonState()
 
     logger.info(
-        "Starting ZTE daemon",
-        extra={
-            "router_host": router_config.host,
-            "mqtt_host": mqtt_config.host,
-            "mqtt_port": mqtt_config.port,
-            "root_topic": mqtt_config.root_topic,
-            "foreground": foreground,
-        },
+        "Starting ZTE daemon: "
+        f"router_host={router_config.host} "
+        f"mqtt_host={mqtt_config.host} "
+        f"mqtt_port={mqtt_config.port} "
+        f"root_topic={mqtt_config.root_topic} "
+        f"foreground={foreground}"
     )
 
     client = zte_client.ZTEClient(router_config.host)
@@ -132,7 +130,7 @@ async def _run_daemon(
                     await asyncio.sleep(mqtt_config.reconnect_seconds)
     finally:
         client.close()
-        logger.info("Daemon stopped", extra={"failures": state.failures})
+        logger.info(f"Daemon stopped: failures={state.failures}")
 
 
 @click.command(name="run")

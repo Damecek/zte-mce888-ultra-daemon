@@ -87,8 +87,10 @@ class MQTTClient:
         clears prior disconnect state before starting the connection process.
         """
         self._logger.info(
-            "Connecting to MQTT broker",
-            extra={"host": self._config.host, "port": self._config.port, "root": self._config.root_topic},
+            "Connecting to MQTT broker: "
+            f"host={self._config.host} "
+            f"port={self._config.port} "
+            f"root={self._config.root_topic}"
         )
         self._disconnect_event.clear()
         # gmqtt does not accept username/password in connect(); set explicitly
@@ -125,8 +127,7 @@ class MQTTClient:
                 `payload`, `qos`, and `retain` flags used for publication.
         """
         self._logger.debug(
-            "Publishing MQTT message",
-            extra={"topic": envelope.topic, "qos": envelope.qos, "retain": envelope.retain},
+            f"Publishing MQTT message: topic={envelope.topic} qos={envelope.qos} retain={envelope.retain}"
         )
         self._client.publish(envelope.topic, envelope.payload, qos=envelope.qos, retain=envelope.retain)
 
@@ -148,10 +149,7 @@ class MQTTClient:
         # filter to only '/get' messages in the dispatcher.
         request_pattern = f"{root}/#"
         self._client.subscribe(request_pattern, qos=self._config.qos)
-        self._logger.info(
-            "Subscribed to MQTT request topics",
-            extra={"pattern": request_pattern},
-        )
+        self._logger.info(f"Subscribed to MQTT request topics: pattern={request_pattern}")
         self._connected_event.set()
 
     def _on_disconnect(self, client: GMQTTClient, packet: object, exc: Exception | None = None) -> None:
@@ -190,7 +188,7 @@ class MQTTClient:
             properties (object): MQTT message properties.
         """
         del client, qos, properties
-        self._logger.debug("Received MQTT message", extra={"topic": topic})
+        self._logger.debug(f"Received MQTT message: topic={topic}")
         if not self._handler:
             return
         try:

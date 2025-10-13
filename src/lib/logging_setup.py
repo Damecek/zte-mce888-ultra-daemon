@@ -1,9 +1,8 @@
 """Central logging configuration for CLI and services.
 
-Provides a simple, structured formatter and convenience helpers that the
-Click commands can use. The formatter emits a consistent, readable line
-including optional context key=value pairs so important fields (e.g.,
-``topic=...``) are visible in logs.
+Provides a simple, readable formatter and convenience helpers that the
+Click commands can use. The formatter emits a consistent single-line
+message; callers should include any context directly in the message text.
 """
 
 from __future__ import annotations

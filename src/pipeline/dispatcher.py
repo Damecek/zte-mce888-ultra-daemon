@@ -96,7 +96,7 @@ class Dispatcher:
             # zte/lte/rsrp1/get -> metric 'lte.rsrp1'
             request = MetricRequest.from_topic_for_root(topic, self._config.root_topic)
         except ValueError:
-            self._logger.warning("Ignoring invalid request topic", extra={"topic": topic})
+            self._logger.warning(f"Ignoring invalid request topic: topic={topic}")
             self.state.record_failure()
             return
 
@@ -130,21 +130,19 @@ class Dispatcher:
                 # Guard: skip publish on effectively empty aggregates
                 if not payload_obj or _is_empty_value(payload_obj):
                     self._logger.error(
-                        "Aggregate request produced empty data; skipping publish",
-                        extra={"topic": topic, "metric": request.metric},
+                        "Aggregate request produced empty data; skipping publish: "
+                        f"topic={topic} "
+                        f"metric={request.metric}"
                     )
                     return
             else:
                 payload_obj = self.metric_reader.fetch(request.metric)
                 # Guard: skip publish on empty single value
                 if _is_empty_value(payload_obj):
-                    self._logger.error(
-                        "Metric value empty; skipping publish",
-                        extra={"topic": topic, "metric": request.metric},
-                    )
+                    self._logger.error(f"Metric value empty; skipping publish: topic={topic} metric={request.metric}")
                     return
         except KeyError:
-            self._logger.warning("Requested metric unavailable", extra={"metric": request.metric})
+            self._logger.warning(f"Requested metric unavailable: metric={request.metric}")
             self.state.record_failure()
             return
         except zte_client.ZTEClientError as exc:
@@ -155,10 +153,7 @@ class Dispatcher:
         envelope = PublishEnvelope(topic=response_topic, payload=payload_obj)
         self.mqtt_client.publish(envelope)
         self.state.record_publish()
-        self._logger.info(
-            "Published metric response",
-            extra={"topic": envelope.topic, "aggregate": request.is_aggregate},
-        )
+        self._logger.info(f"Published metric response: topic={envelope.topic} aggregate={request.is_aggregate}")
 
 
 __all__ = ["Dispatcher"]

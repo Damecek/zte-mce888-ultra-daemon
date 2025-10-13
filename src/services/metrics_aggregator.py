@@ -124,7 +124,7 @@ class MetricsAggregator:
             json_key = _METRIC_KEY_MAP[metric_ident]
             raw = payload.get(json_key)
             if raw is None:
-                self._logger.warning("Missing LTE metric", extra={"metric": metric_ident})
+                self._logger.warning(f"Missing LTE metric: metric={metric_ident}")
                 continue
             aggregate[output_key] = _coerce(raw)
         return aggregate
