@@ -18,12 +18,13 @@ class MetricRequest:
     def from_topic(cls, topic: str) -> MetricRequest:
         """
         Create a MetricRequest from an MQTT request topic string.
-        
+
         Parameters:
             topic (str): MQTT request topic to parse into a normalized MetricRequest.
-        
+
         Returns:
-            MetricRequest: An instance with `topic`, `root`, `metric`, and `is_aggregate` populated from the parsed topic.
+            MetricRequest: An instance with `topic`, `root`, `metric`, and
+                `is_aggregate` populated from the parsed topic.
         """
         parsed = topics.parse_request_topic(topic)
         return cls(

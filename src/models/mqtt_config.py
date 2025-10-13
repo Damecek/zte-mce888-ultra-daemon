@@ -7,15 +7,17 @@ from ipaddress import ip_address
 def _normalize_root(topic: str) -> str:
     """
     Normalize an MQTT root topic string.
-    
+
     Parameters:
-    	topic (str): Topic string that may include leading/trailing whitespace and '/'-separated segments.
-    
+        topic (str): Topic string that may include leading/trailing
+            whitespace and '/'-separated segments.
+
     Returns:
-    	normalized (str): Lowercased topic with empty segments removed and segments joined by '/'.
-    
+        normalized (str): Lowercased topic with empty segments removed and
+            segments joined by '/'.
+
     Raises:
-    	ValueError: If the normalized topic is empty.
+        ValueError: If the normalized topic is empty.
     """
     segments = [segment.strip() for segment in topic.strip().split("/") if segment.strip()]
     if not segments:
@@ -38,10 +40,15 @@ class MQTTConfig:
 
     def __post_init__(self) -> None:
         """
-        Perform post-initialization validation and normalization of MQTT configuration.
-        
-        Strips surrounding whitespace from `host`, validates presence and that it does not include a protocol scheme, ensures `port` is within 1-65535, normalizes `root_topic` to a canonical form, enforces that `qos` equals 0 and `retain` is False, and verifies the configured host resolves to a loopback or private address when expressed as an IP.
-        
+        Perform post-initialization validation and normalization of MQTT
+        configuration.
+
+        Strips whitespace from `host`, validates presence and that it does not
+        include a protocol scheme, ensures `port` is within 1-65535,
+        normalizes `root_topic`, enforces that `qos` equals 0 and `retain` is
+        False, and verifies the configured host resolves to a loopback or
+        private address when expressed as an IP.
+
         Raises:
             ValueError: If `host` is empty after trimming.
             ValueError: If `host` contains a protocol scheme (contains "://").
@@ -67,10 +74,13 @@ class MQTTConfig:
 
     def _ensure_local_network(self) -> None:
         """
-        Validate that the configured MQTT host resolves to a local or loopback IP address.
-        
-        If the configured host is an IP address (a trailing ":port" is ignored), it must be a private or loopback address; hostnames are accepted but not resolved or validated here.
-        
+        Validate that the configured MQTT host resolves to a local or
+        loopback IP address.
+
+        If the configured host is an IP address (a trailing ":port" is
+        ignored), it must be a private or loopback address; hostnames are
+        accepted but not resolved or validated here.
+
         Raises:
             ValueError: If the host is an IP address that is neither private nor loopback.
         """

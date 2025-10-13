@@ -9,11 +9,14 @@ from typing import Any
 
 def _format_payload(payload: Any) -> str:
     """
-    Format a payload value into a human-readable string suitable for inclusion in discovery artifacts.
-    
+    Format a payload for inclusion in discovery artifacts.
+
     Parameters:
-        payload (Any): The value to format. If `payload` is None, it is represented as the literal string `"null"`. If `payload` is a `dict` or `list`, it is serialized as pretty-printed JSON with 2-space indentation and keys sorted. Otherwise the value's `str()` representation is returned.
-    
+        payload (Any): The value to format. If `payload` is None, it is
+            represented as the literal string "null". If `payload` is a dict
+            or list, it is serialized as pretty-printed JSON (2-space indent,
+            keys sorted). Otherwise the value's `str()` is returned.
+
     Returns:
         str: The formatted string representation of `payload`.
     """
@@ -27,12 +30,14 @@ def _format_payload(payload: Any) -> str:
 def _format_response(response: Any) -> str:
     """
     Format a response value for inclusion in discovery Markdown.
-    
+
     Parameters:
-        response (Any): The value to format; typically a dict, list, or other serializable value.
-    
+        response (Any): The value to format; typically a dict, list, or other
+            serializable value.
+
     Returns:
-        str: Pretty-printed JSON (2-space indent, keys sorted) if `response` is a dict or list, otherwise `str(response)`.
+        str: Pretty-printed JSON (2-space indent, keys sorted) if `response`
+            is a dict or list, otherwise `str(response)`.
     """
     if isinstance(response, dict | list):
         return json.dumps(response, indent=2, sort_keys=True)

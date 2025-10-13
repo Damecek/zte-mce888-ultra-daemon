@@ -22,13 +22,13 @@ class StubMetricReader:
     def fetch(self, metric: str) -> object:
         """
         Record a metric fetch call and return the configured response for that metric.
-        
+
         Parameters:
             metric (str): Name of the metric to fetch.
-        
+
         Returns:
             object: The value configured for `metric` in `responses`.
-        
+
         Raises:
             KeyError: If no response is configured for `metric`.
         """
@@ -45,7 +45,7 @@ class StubAggregator:
     def __post_init__(self) -> None:
         """
         Initialize the instance's call counter.
-        
+
         Sets the attribute `calls` to 0 to track the number of times collection methods are invoked.
         """
         self.calls = 0
@@ -53,7 +53,7 @@ class StubAggregator:
     def collect_lte(self) -> dict[str, object]:
         """
         Record that an LTE aggregation was requested and return the predefined aggregation payload.
-        
+
         Returns:
             dict[str, object]: The predefined payload mapping metric names to their values.
         """
@@ -65,7 +65,7 @@ class StubMQTTClient:
     def __init__(self) -> None:
         """
         Initialize the test MQTT client that records published envelopes.
-        
+
         Creates an empty `publishes` list which will hold envelope objects passed to `publish`.
         """
         self.publishes: list[object] = []
@@ -73,9 +73,10 @@ class StubMQTTClient:
     def publish(self, envelope: object) -> None:
         """
         Record an MQTT envelope in the client's published messages list.
-        
+
         Parameters:
-            envelope (object): The MQTT message envelope that was published; appended to the client's internal `publishes` list.
+            envelope (object): The MQTT message envelope that was published;
+                appended to the client's internal `publishes` list.
         """
         self.publishes.append(envelope)
 
@@ -83,14 +84,20 @@ class StubMQTTClient:
 @pytest.fixture()
 def dispatcher_setup() -> tuple[Dispatcher, StubMetricReader, StubAggregator, StubMQTTClient]:
     """
-    Create a Dispatcher instance wired with lightweight test doubles for integration testing.
-    
-    Sets up a StubMetricReader preloaded with {"provider": "O2"}, a StubAggregator that returns a fixed LTE aggregation payload, a StubMQTTClient that records published envelopes, a DaemonState, and an MQTTConfig targeting "mqtt.local", then constructs and returns a Dispatcher using those objects.
-    
+    Create a Dispatcher wired with lightweight test doubles for integration
+    testing.
+
+    Sets up a StubMetricReader preloaded with {"provider": "O2"}, a
+    StubAggregator that returns a fixed LTE aggregation payload, a
+    StubMQTTClient that records published envelopes, a DaemonState, and an
+    MQTTConfig targeting "mqtt.local", then constructs and returns a
+    Dispatcher using those objects.
+
     Returns:
-        (dispatcher, metric_reader, aggregator, mqtt_client): 
+        (dispatcher, metric_reader, aggregator, mqtt_client):
             dispatcher — Dispatcher configured with the test doubles and state.
-            metric_reader — StubMetricReader initialized with a single "provider" response.
+            metric_reader — StubMetricReader initialized with a single
+            "provider" response.
             aggregator — StubAggregator that returns the predefined LTE payload.
             mqtt_client — StubMQTTClient that records published envelopes.
     """
@@ -111,7 +118,7 @@ def dispatcher_setup() -> tuple[Dispatcher, StubMetricReader, StubAggregator, St
 
 
 def test_aggregate_request_uses_aggregator(
-    dispatcher_setup: tuple[Dispatcher, StubMetricReader, StubAggregator, StubMQTTClient]
+    dispatcher_setup: tuple[Dispatcher, StubMetricReader, StubAggregator, StubMQTTClient],
 ) -> None:
     dispatcher, metric_reader, aggregator, mqtt_client = dispatcher_setup
 

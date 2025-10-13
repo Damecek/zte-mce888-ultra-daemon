@@ -200,23 +200,32 @@ class ZTEClient:
         retry_on_auth: bool,
     ) -> Any:
         """
-        Perform an authenticated HTTP request against the modem API and return the parsed response.
-        
+        Perform an authenticated HTTP request against the modem API and return
+        the parsed response.
+
         Parameters:
             path (str): Request path relative to the client's base URL.
-            method (str | None): Explicit HTTP method to use (e.g., "GET", "POST"); if None, selects POST when payload is provided, otherwise GET.
-            payload (Any | None): Request payload. If a dict or list and method is not GET, it is sent as JSON; for GET, dict payload is used as query parameters; other payload types are sent as raw content.
-            expects (str): Expected response format; use "json" to parse and return JSON, any other value returns raw text.
-            retry_on_auth (bool): If True, will attempt a single re-login using the cached plaintext password on 401/403 and retry the request.
-        
+            method (str | None): Explicit HTTP method (e.g., "GET", "POST").
+                If None, selects POST when payload is provided, otherwise GET.
+            payload (Any | None): Request payload. If a dict/list and method is
+                not GET, it is sent as JSON; for GET, dict payload is used as
+                query parameters; other payload types are sent as raw content.
+            expects (str): Expected response format; use "json" to parse and
+                return JSON, any other value returns raw text.
+            retry_on_auth (bool): If True, attempt a single re-login using the
+                cached plaintext password on 401/403 and retry the request.
+
         Returns:
-            Any: Parsed JSON when expects == "json", otherwise the response text.
-        
+            Any: Parsed JSON when expects == "json", otherwise response text.
+
         Raises:
-            AuthenticationError: If no valid session exists before the request or authentication is required/expired and cannot be retried.
+            AuthenticationError: If no valid session exists before the request
+                or authentication is required/expired and cannot be retried.
             TimeoutError: On request timeout.
-            RequestError: For non-success HTTP status codes or lower-level HTTP failures.
-            ResponseParseError: When expects == "json" but the response body cannot be decoded as JSON.
+            RequestError: For non-success HTTP status codes or lower-level HTTP
+                failures.
+            ResponseParseError: When expects == "json" but the response body
+                cannot be decoded as JSON.
         """
         if not self._session.authenticated or not self._session.cookie:
             raise AuthenticationError("Login required before making requests")

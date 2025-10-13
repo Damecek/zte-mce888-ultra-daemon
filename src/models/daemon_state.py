@@ -28,16 +28,16 @@ class DaemonState:
     def record_request(self, topic: str) -> None:
         """
         Record the topic of the most recent request.
-        
+
         Parameters:
-        	topic (str): Topic string to store as the last seen request.
+            topic (str): Topic string to store as the last seen request.
         """
         self.last_seen_request_topic = topic
 
     def record_publish(self) -> None:
         """
         Record a successful publish by updating the last publish timestamp and resetting the failure count.
-        
+
         Sets the instance's last_publish_time to the current UTC time and sets failures to 0.
         """
         self.last_publish_time = datetime.now(UTC)
@@ -46,7 +46,7 @@ class DaemonState:
     def record_failure(self) -> None:
         """
         Increment the object's failure count by one.
-        
+
         This records a failed operation (such as a failed publish) by increasing the `failures` counter.
         """
         self.failures += 1

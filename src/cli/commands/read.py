@@ -10,6 +10,8 @@ from lib.logging_setup import get_logger, logging_options
 from lib.options import router_options
 from services import zte_client
 from services.metrics_aggregator import MetricsAggregator
+from services.neighbor_cells import parse_neighbors
+from services.zte_paths import neighbors_path
 
 
 @click.command(
@@ -48,37 +50,6 @@ def read_command(
     ident = metric.strip()
     ident_norm = ident.lower()
 
-    def _to_num(val: str) -> int | float | str:
-        try:
-            if "." in val:
-                return float(val)
-            return int(val)
-        except Exception:
-            return val
-
-    def _parse_neighbors(raw: object | None) -> list[dict[str, object]]:
-        if not raw:
-            return []
-        items: list[dict[str, object]] = []
-        # Format: "freq,pci,rsrq,rsrp,rssi;freq,pci,rsrq,rsrp,rssi;..."
-        for cell in str(raw).split(";"):
-            if not cell:
-                continue
-            parts = cell.split(",")
-            if len(parts) < 5:
-                # Ignore malformed entries
-                continue
-            freq, pci, rsrq, rsrp, rssi = parts[:5]
-            obj = {
-                "id": _to_num(pci),
-                "rsrp": _to_num(rsrp),
-                "rsrq": _to_num(rsrq),
-                "freq": _to_num(freq),
-                "rssi": _to_num(rssi),
-            }
-            items.append(obj)
-        return items
-
     # All reads are performed live against the router.
 
     if router_host:
@@ -89,11 +60,10 @@ def read_command(
 
             def emit_neighbors() -> None:
                 # Dedicated fetch for neighbors as it's not part of MetricsAggregator
-                neighbors_cmd = "ngbr_cell_info"
-                path = f"/goform/goform_get_cmd_process?cmd={neighbors_cmd}&multi_data=1"
+                path = neighbors_path()
                 data = client.request(path, method="GET", expects="json")
                 raw = data.get("ngbr_cell_info") if isinstance(data, dict) else None
-                neighbors = _parse_neighbors(raw)
+                neighbors = parse_neighbors(raw)
                 if ident_norm == "neighbors":
                     import json as _json
 
@@ -121,31 +91,7 @@ def read_command(
                 click.echo(_json.dumps(item))
                 return
 
-            if listen:
-                try:
-                    while True:
-                        if ident_norm.startswith("neighbors"):
-                            emit_neighbors()
-                        elif ident_norm in {"lte", "nr5g", "temp", "zte"}:
-                            if ident_norm == "lte":
-                                obj = aggregator.collect_lte()
-                            elif ident_norm == "nr5g":
-                                obj = aggregator.collect_nr5g()
-                            elif ident_norm == "temp":
-                                obj = aggregator.collect_temp()
-                            else:
-                                obj = aggregator.collect_all()
-                            import json as _json
-
-                            click.echo(_json.dumps(obj))
-                        else:
-                            value = aggregator.fetch(ident_norm)
-                            click.echo(f"{ident}: {value}")
-                        time.sleep(1)
-                except KeyboardInterrupt:
-                    # Graceful shutdown on Ctrl-C
-                    return ident
-            else:
+            def emit_once() -> None:
                 if ident_norm.startswith("neighbors"):
                     emit_neighbors()
                 elif ident_norm in {"lte", "nr5g", "temp", "zte"}:
@@ -163,6 +109,16 @@ def read_command(
                 else:
                     value = aggregator.fetch(ident_norm)
                     click.echo(f"{ident}: {value}")
+
+            if listen:
+                try:
+                    while True:
+                        emit_once()
+                        time.sleep(1)
+                except KeyboardInterrupt:
+                    return ident
+            else:
+                emit_once()
                 return ident
         except zte_client.ZTEClientError as exc:
             raise click.ClickException(str(exc)) from exc

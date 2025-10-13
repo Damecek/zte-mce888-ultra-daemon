@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from services import zte_client
+from lib.value_coerce import coerce_number_like as _coerce
+
+if TYPE_CHECKING:  # pragma: no cover - typing helper
+    from services.zte_client import ZTEClient
 
 # Mapping between daemon metric identifiers and modem JSON payload keys.
 _METRIC_KEY_MAP: dict[str, str] = {
@@ -59,40 +62,20 @@ _LTE_OUTPUT_KEYS: dict[str, str] = {
 _QUERY_FIELDS = sorted({key for key in _METRIC_KEY_MAP.values()})
 
 
-def _coerce(value: Any) -> Any:
-    """
-    Attempt to convert string inputs to numeric types while leaving other values unchanged.
-    
-    If `value` is a string, leading and trailing whitespace are removed; an empty string is returned as-is. If the trimmed string contains a dot, it is converted to a `float`; otherwise an `int` conversion is attempted. If numeric conversion fails, the trimmed string is returned. Non-string inputs are returned unchanged.
-    
-    Parameters:
-        value (Any): The value to coerce.
-    
-    Returns:
-        Any: A `float` or `int` when conversion succeeds, the trimmed `str` when conversion fails or is empty, or the original non-string `value`.
-    """
-    if isinstance(value, str):
-        text = value.strip()
-        if not text:
-            return text
-        try:
-            if "." in text:
-                return float(text)
-            return int(text)
-        except ValueError:
-            return text
-    return value
+"""Numeric coercion now provided by lib.value_coerce.coerce_number_like."""
 
 
 class MetricsAggregator:
     """Provides single metric lookups and LTE aggregate payloads."""
 
-    def __init__(self, client: zte_client.ZTEClient, logger: logging.Logger | None = None) -> None:
+    def __init__(self, client: ZTEClient, logger: logging.Logger | None = None) -> None:
         """
         Initialize the MetricsAggregator with a ZTE client and optional logger.
-        
+
         Parameters:
-            logger (logging.Logger | None): Logger to use for internal messages. If omitted, a logger named "zte_daemon.metrics_aggregator" is created and used.
+            logger (logging.Logger | None): Logger for internal messages. If
+                omitted, a logger named "zte_daemon.metrics_aggregator" is
+                used.
         """
         self._client = client
         self._logger = logger or logging.getLogger("zte_daemon.metrics_aggregator")
@@ -100,13 +83,14 @@ class MetricsAggregator:
     def fetch_metric(self, metric: str) -> Any:
         """
         Fetches a single metric value from the router payload using the daemon metric identifier.
-        
+
         Parameters:
             metric (str): Daemon metric identifier (case-insensitive) to look up in the router payload.
-        
+
         Returns:
-            The metric value coerced to an int or float when the string represents a number, otherwise the original value (string or other type).
-        
+            The metric value coerced to an int or float when the string
+            represents a number; otherwise the original value.
+
         Raises:
             KeyError: If the metric is not mapped to a payload key or if the payload does not contain the mapped key.
         """
@@ -128,9 +112,9 @@ class MetricsAggregator:
     def collect_lte(self) -> dict[str, Any]:
         """
         Builds an aggregated dictionary of LTE metrics by extracting and coercing values from the router payload.
-        
+
         Missing metrics are skipped and a warning is logged for each absent metric.
-        
+
         Returns:
             dict[str, Any]: Mapping of output metric keys to coerced metric values.
         """
@@ -235,10 +219,10 @@ class MetricsAggregator:
     def _load_payload(self) -> dict[str, Any]:
         """
         Load the router metrics payload and return it as a mapping from payload keys to values.
-        
+
         Returns:
             dict[str, Any]: Dictionary mapping router JSON payload keys to their values.
-        
+
         Raises:
             RuntimeError: If the router response is not a dictionary.
         """
