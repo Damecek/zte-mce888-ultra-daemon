@@ -58,8 +58,13 @@ jobs:
         run: |
           # vyber nejnovější wheel balíček projektu
           WHEEL=$(ls -t dist/*.whl | head -n1)
-          echo "wheel=${WHEEL}" >> $GITHUB_OUTPUT
-          echo "Found wheel: ${WHEEL}"
+          # převeď na absolutní cestu, aby fungovala i z .pyapp
+          case "$WHEEL" in
+            /*) WHEEL_ABS="$WHEEL" ;;
+            *)  WHEEL_ABS="$(pwd)/$WHEEL" ;;
+          esac
+          echo "wheel=${WHEEL_ABS}" >> "$GITHUB_OUTPUT"
+          echo "Found wheel: ${WHEEL_ABS}"
 
       - name: Download PyApp source release
         run: |
