@@ -18,9 +18,13 @@ def configure(level: int = logging.WARNING, handler: logging.Handler | None = No
     if _CONFIGURED:
         return
 
+    # Avoid installing the default root StreamHandler so that third-party
+    # libraries (e.g., httpx, gmqtt) do not print to stdout/stderr unless we
+    # explicitly attach a handler later. If a specific handler is provided,
+    # use it; otherwise keep the root logger without handlers.
     logging.basicConfig(
         level=level,
-        handlers=[handler] if handler else None,
+        handlers=[handler] if handler else [],
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     _CONFIGURED = True
@@ -72,33 +76,50 @@ def get_logger(level: str = "warn", log_file: str | Path | None = None) -> loggi
 
     formatter = StructuredFormatter()
 
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
-    stream_handler.setLevel(resolved_level)
-    logger.addHandler(stream_handler)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(resolved_level)
 
+    # If a log file is provided, write everything (our logs and third-party
+    # library logs) to that file only. Otherwise, write to stdout.
+    file_handler: logging.Handler | None = None
     if log_file:
         path = Path(log_file)
         path.parent.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(path, encoding="utf-8")
         file_handler.setFormatter(formatter)
         file_handler.setLevel(resolved_level)
+        # Attach to our app logger
         logger.addHandler(file_handler)
+        # Also attach to root so third-party loggers that propagate end up in the file
+        # Avoid duplicate attachment if called multiple times in a single process
+        if not any(
+            isinstance(h, logging.FileHandler) and getattr(h, "baseFilename", None) == str(path)
+            for h in root_logger.handlers
+        ):
+            root_logger.addHandler(file_handler)
+    else:
+        # Console mode: keep our own stream handler
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        stream_handler.setLevel(resolved_level)
+        logger.addHandler(stream_handler)
+        # Ensure third-party libraries also appear on console by giving the root
+        # logger a stream handler if it doesn't already have one.
+        if not any(isinstance(h, logging.StreamHandler) for h in root_logger.handlers):
+            root_stream = logging.StreamHandler()
+            root_stream.setFormatter(formatter)
+            root_stream.setLevel(resolved_level)
+            root_logger.addHandler(root_stream)
 
+    # Keep application logger independent from root to avoid double logging
     logger.propagate = False
 
-    # Tame noisy third-party libraries based on desired verbosity.
-    for name in ("httpx", "httpcore", "urllib3"):
+    # Tame noisy third-party libraries and align their level; let them propagate
+    # to the root so they follow root handlers (file or console as chosen).
+    for name in ("httpx", "httpcore", "urllib3", "gmqtt"):
         ext_logger = logging.getLogger(name)
         ext_logger.setLevel(resolved_level)
-        # Allow these to propagate to root handlers if present
-        # so basicConfig formatting applies, but level gates noise.
         ext_logger.propagate = True
-
-    # Also align the root logger level with the chosen app level
-    # while keeping its default handlers/formatting from basicConfig.
-    root_logger = logging.getLogger()
-    root_logger.setLevel(resolved_level)
 
     return logger
 

@@ -136,7 +136,12 @@ async def _run_daemon(
 @click.command(name="run")
 @router_options(default_host="http://192.168.0.1")
 @logging_options(help_text="Log level for stdout and file handlers")
-@click.option("foreground", "--foreground", is_flag=True, help="Run in foreground (default).")
+@click.option(
+    "foreground",
+    "--foreground",
+    is_flag=True,
+    help="Run in foreground.",
+)
 @click.option("mqtt_host", "--mqtt-host", required=True, help="MQTT broker hostname or IP address.")
 @click.option("mqtt_port", "--mqtt-port", default=1883, show_default=True, type=int, help="MQTT broker port")
 @click.option("mqtt_username", "--mqtt-username", help="MQTT username if authentication is required.")
