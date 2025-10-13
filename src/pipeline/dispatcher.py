@@ -91,6 +91,19 @@ class Dispatcher:
                 payload (bytes | None): Ignored; requests are signaled via the topic only.
         """
         del payload  # Requests are signaled via topic only
+        # Special-case: ignore response topics we published ourselves (under root, without '/get').
+        # This prevents benign warnings when subscribed to '{root}/#'.
+        try:
+            normalized = topics.normalize_topic(topic)
+            root_norm = topics.normalize_topic(self._config.root_topic)
+            if normalized.startswith(root_norm + "/") and not normalized.endswith("/get"):
+                # Known in-root, non-request messages (e.g., 'zte/lte/rsrp1'). Ignore quietly.
+                self._logger.debug(f"Ignoring non-request topic under root: topic={topic}")
+                return
+        except ValueError:
+            # Fall through to parser to emit a consistent warning below.
+            pass
+
         try:
             # Parse with known root and support nested metric paths like
             # zte/lte/rsrp1/get -> metric 'lte.rsrp1'

@@ -108,13 +108,13 @@ def _make_dispatcher(
     return dispatcher, state, mqtt_client
 
 
-def test_invalid_topic_records_failure_and_no_publish() -> None:
-    # Topic that does not end with /get should be rejected by parser
+def test_non_get_in_root_is_ignored_without_failure() -> None:
+    # Topics under the root without trailing /get are response topics; ignore quietly.
     dispatcher, state, mqtt = _make_dispatcher(reader=MetricReaderReturn("x"), aggregator=AggregatorEmpty())
-    dispatcher.handle_request("zte/provider")  # missing trailing /get
+    dispatcher.handle_request("zte/provider")  # response topic, not a request
 
-    assert state.failures == 1
-    assert state.requests == 0  # not counted on invalid topic
+    assert state.failures == 0
+    assert state.requests == 0  # not counted on ignored topic
     assert not mqtt.publishes
 
 
