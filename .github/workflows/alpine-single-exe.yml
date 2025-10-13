@@ -36,6 +36,8 @@ jobs:
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
+          # make uv available in this step and the next ones
+          export PATH="${HOME}/.local/bin:${PATH}"
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
           uv --version
 
@@ -71,24 +73,22 @@ jobs:
         env:
           WHEEL: ${{ steps.wheel.outputs.wheel }}
         run: |
-          # povinné
-          export PYAPP_PROJECT_PATH="${WHEEL}"
-          export PYAPP_EXEC_ENTRYPOINT="${EXEC_ENTRYPOINT}"
-          export PYAPP_DISTRIBUTION_EMBED="1"      # embed CPython do binárky
-          export PYAPP_PYTHON_VERSION="${PY_VER}"  # cílový CPython
-          # volitelné: zapni uv inside pyapp (rychlejší řešení závislostí při install-time)
-          export PYAPP_UV_ENABLED="1"
-          # pokud je vše embedováno a nic se nemá instalovat při prvním spuštění, odkomentuj:
-          # export PYAPP_SKIP_INSTALL="1"
+          # Persist variables for subsequent steps via GitHub Actions env file
+          echo "PYAPP_PROJECT_PATH=${WHEEL}" >> $GITHUB_ENV
+          echo "PYAPP_EXEC_ENTRYPOINT=${EXEC_ENTRYPOINT}" >> $GITHUB_ENV
+          echo "PYAPP_DISTRIBUTION_EMBED=1" >> $GITHUB_ENV
+          echo "PYAPP_PYTHON_VERSION=${PY_VER}" >> $GITHUB_ENV
+          echo "PYAPP_UV_ENABLED=1" >> $GITHUB_ENV
+          # To fully skip install on first run (when embedding a full env), uncomment:
+          # echo "PYAPP_SKIP_INSTALL=1" >> $GITHUB_ENV
+          # CPU variant example (default v3):
+          # echo "PYAPP_DISTRIBUTION_VARIANT_CPU=v3" >> $GITHUB_ENV
+          # Alternative: run module instead of entrypoint
+          # echo "PYAPP_EXEC_MODULE=cli.zte" >> $GITHUB_ENV
 
-          # optimalizace CPU variant (ponech default = v3), viz python-build-standalone
-          # export PYAPP_DISTRIBUTION_VARIANT_CPU="v3"
-
-          # ukázka pro spouštění přes modul místo entrypointu:
-          # export PYAPP_EXEC_MODULE="cli.zte"
-
-          # ulož pro další krok
-          printenv | grep '^PYAPP_' | sed 's/=.*//' | sort
+          # Show which variables are set
+          echo "Configured PYAPP_* variables:"
+          ( set -o posix ; set ) | grep '^PYAPP_' | sed 's/=.*//' | sort
 
       - name: Build PyApp (musl target)
         working-directory: .pyapp
