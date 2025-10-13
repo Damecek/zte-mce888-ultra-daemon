@@ -1,0 +1,130 @@
+name: build-alpine-single-exe
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+env:
+  APP_NAME: zte                   # výsledná binárka bude dist/bin/zte
+  PY_VER: "3.12"                  # cílový Python
+  # používáme console_script entry point definovaný v pyproject.toml
+  EXEC_ENTRYPOINT: cli.zte:cli    # odpovídá [project.scripts].zte = "cli.zte:cli"
+
+jobs:
+  build:
+    name: Alpine musl build (x86_64)
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:latest
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - name: Prepare Alpine toolchain
+        run: |
+          apk add --no-cache \
+            bash curl git ca-certificates \
+            build-base pkgconfig \
+            rust cargo \
+            openssl-dev zlib-dev xz zstd
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+          uv --version
+
+      - name: Lock & sync deps
+        run: |
+          # vytvoří řízené prostředí a nainstaluje závislosti dle pyproject.toml
+          uv sync --python ${PY_VER}
+          # volitelně: spusť testy v izolovaném prostředí
+          # uv run -m pytest
+
+      - name: Build wheel/sdist
+        run: |
+          uv build --wheel --sdist
+          ls -lah dist
+
+      - name: Resolve wheel path
+        id: wheel
+        run: |
+          # vyber nejnovější wheel balíček projektu
+          WHEEL=$(ls -t dist/*.whl | head -n1)
+          echo "wheel=${WHEEL}" >> $GITHUB_OUTPUT
+          echo "Found wheel: ${WHEEL}"
+
+      - name: Download PyApp source release
+        run: |
+          mkdir -p .pyapp && cd .pyapp
+          curl -L https://github.com/ofek/pyapp/releases/latest/download/source.tar.gz -o source.tar.gz
+          tar -xzf source.tar.gz --strip-components=1
+          # sanity check
+          [ -f Cargo.toml ] || (echo "PyApp source missing" && exit 1)
+
+      - name: Configure PyApp env (embed Python + project)
+        env:
+          WHEEL: ${{ steps.wheel.outputs.wheel }}
+        run: |
+          # povinné
+          export PYAPP_PROJECT_PATH="${WHEEL}"
+          export PYAPP_EXEC_ENTRYPOINT="${EXEC_ENTRYPOINT}"
+          export PYAPP_DISTRIBUTION_EMBED="1"      # embed CPython do binárky
+          export PYAPP_PYTHON_VERSION="${PY_VER}"  # cílový CPython
+          # volitelné: zapni uv inside pyapp (rychlejší řešení závislostí při install-time)
+          export PYAPP_UV_ENABLED="1"
+          # pokud je vše embedováno a nic se nemá instalovat při prvním spuštění, odkomentuj:
+          # export PYAPP_SKIP_INSTALL="1"
+
+          # optimalizace CPU variant (ponech default = v3), viz python-build-standalone
+          # export PYAPP_DISTRIBUTION_VARIANT_CPU="v3"
+
+          # ukázka pro spouštění přes modul místo entrypointu:
+          # export PYAPP_EXEC_MODULE="cli.zte"
+
+          # ulož pro další krok
+          printenv | grep '^PYAPP_' | sed 's/=.*//' | sort
+
+      - name: Build PyApp (musl target)
+        working-directory: .pyapp
+        run: |
+          # build uvnitř Alpine => implicitně musl (x86_64-unknown-linux-musl)
+          cargo build --release
+          mkdir -p ../dist/bin
+          cp target/release/pyapp "../dist/bin/${APP_NAME}"
+          chmod +x "../dist/bin/${APP_NAME}"
+          ls -lah ../dist/bin
+
+      - name: Smoke test (no network)
+        run: |
+          # volitelně: ověření, že binárka startuje i bez sítě
+          # pokud nepoužíváš PYAPP_SKIP_INSTALL=1 a nejsou embednuty závislosti, první run může vyžadovat síť
+          "./dist/bin/${APP_NAME}" --help || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-alpine-x86_64
+          path: dist/bin/${{ env.APP_NAME }}
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-alpine-x86_64
+          path: ./release
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./release/${{ env.APP_NAME }}
+          generate_release_notes: true

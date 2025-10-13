@@ -29,6 +29,13 @@ addopts = "-ra"
 zte = "cli.zte:cli"
 zte-cli-docs = "tools.cli_docs:main"
 
+# Ensure setuptools finds our src/ packages when building wheels
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
 [tool.ruff]
 # Keep lines readable and match our Python version
 line-length = 120
