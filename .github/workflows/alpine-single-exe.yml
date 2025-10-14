@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
 
 env:
-  APP_NAME: zte                   # výsledná binárka bude dist/bin/zte
-  PY_VER: "3.12"                  # cílový Python
-  # používáme console_script entry point definovaný v pyproject.toml
-  EXEC_ENTRYPOINT: cli.zte:cli    # odpovídá [project.scripts].zte = "cli.zte:cli"
+  APP_NAME: zte                   # output binary will be dist/bin/zte
+  PY_VER: "3.12"                  # target Python version for embedding
+  # using console_script entry point defined in pyproject.toml
+  EXEC_ENTRYPOINT: cli.zte:cli    # matches [project.scripts].zte = "cli.zte:cli"
 
 jobs:
   build:
@@ -41,22 +41,26 @@ jobs:
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
           uv --version
 
-      - name: Lock & sync deps
-        run: |
-          # vytvoří řízené prostředí a nainstaluje závislosti dle pyproject.toml
-          uv sync --python ${PY_VER}
-          # volitelně: spusť testy v izolovaném prostředí
-          # uv run -m pytest
+      - name: Cache uv downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.local/share/uv
+          key: uv-${{ runner.os }}-${{ env.PY_VER }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-${{ env.PY_VER }}-
 
       - name: Build wheel/sdist
         run: |
-          uv build --wheel --sdist
+          # Build project distributions without creating a venv (fast)
+          uv build --python ${PY_VER} --wheel --sdist
           ls -lah dist
 
       - name: Resolve wheel path
         id: wheel
         run: |
-          # vyber nejnovější wheel balíček projektu
+          # pick the newest project wheel
           WHEEL=$(ls -t dist/*.whl | head -n1)
           # převeď na absolutní cestu, aby fungovala i z .pyapp
           case "$WHEEL" in
@@ -73,6 +77,17 @@ jobs:
           tar -xzf source.tar.gz --strip-components=1
           # sanity check
           [ -f Cargo.toml ] || (echo "PyApp source missing" && exit 1)
+
+      - name: Cache cargo registry and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            .pyapp/target
+          key: cargo-${{ runner.os }}-pyapp-${{ hashFiles('.pyapp/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-pyapp-
 
       - name: Configure PyApp env (embed Python + project)
         env:
@@ -96,32 +111,20 @@ jobs:
           echo "PYAPP_DISTRIBUTION_EMBED=1" >> $GITHUB_ENV
           echo "PYAPP_PYTHON_VERSION=${PY_VER}" >> $GITHUB_ENV
           echo "PYAPP_UV_ENABLED=1" >> $GITHUB_ENV
-          # To fully skip install on first run (when embedding a full env), uncomment:
-          # echo "PYAPP_SKIP_INSTALL=1" >> $GITHUB_ENV
-          # CPU variant example (default v3):
+          # Optional knobs:
+          # echo "PYAPP_SKIP_INSTALL=1" >> $GITHUB_ENV     # fully offline first run (with prebuilt env)
           # echo "PYAPP_DISTRIBUTION_VARIANT_CPU=v3" >> $GITHUB_ENV
-          # Alternative: run module instead of entrypoint
           # echo "PYAPP_EXEC_MODULE=cli.zte" >> $GITHUB_ENV
-
-          # Show which variables are set
-          echo "Configured PYAPP_* variables:"
-          ( set -o posix ; set ) | grep '^PYAPP_' | sed 's/=.*//' | sort
 
       - name: Build PyApp (musl target)
         working-directory: .pyapp
         run: |
-          # build uvnitř Alpine => implicitně musl (x86_64-unknown-linux-musl)
+          # Build inside Alpine => musl (x86_64-unknown-linux-musl)
           cargo build --release
           mkdir -p ../dist/bin
           cp target/release/pyapp "../dist/bin/${APP_NAME}"
           chmod +x "../dist/bin/${APP_NAME}"
           ls -lah ../dist/bin
-
-      - name: Smoke test (no network)
-        run: |
-          # volitelně: ověření, že binárka startuje i bez sítě
-          # pokud nepoužíváš PYAPP_SKIP_INSTALL=1 a nejsou embednuty závislosti, první run může vyžadovat síť
-          "./dist/bin/${APP_NAME}" --help || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -130,7 +133,6 @@ jobs:
           path: dist/bin/${{ env.APP_NAME }}
 
   release:
-    if: startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -140,8 +142,19 @@ jobs:
           name: ${{ env.APP_NAME }}-alpine-x86_64
           path: ./release
 
+      - name: Compute tag and release names
+        id: names
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "tag=alpine-exe-${SHORT_SHA}-${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+          echo "name=Alpine single-exe ${SHORT_SHA} (#${GITHUB_RUN_NUMBER})" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.names.outputs.tag }}
+          name: ${{ steps.names.outputs.name }}
           files: ./release/${{ env.APP_NAME }}
+          draft: false
+          prerelease: false
           generate_release_notes: true
