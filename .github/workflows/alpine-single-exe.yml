@@ -80,6 +80,18 @@ jobs:
         run: |
           # Persist variables for subsequent steps via GitHub Actions env file
           echo "PYAPP_PROJECT_PATH=${WHEEL}" >> $GITHUB_ENV
+          # Derive project name and version from pyproject.toml
+          PROJ_NAME=$(sed -n 's/^name = "\(.*\)"/\1/p' pyproject.toml | head -n1)
+          PROJ_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml | head -n1)
+          # Fallback to names from wheel if parsing failed
+          if [ -z "$PROJ_NAME" ]; then
+            PROJ_NAME=$(basename "$WHEEL" | sed 's/-[0-9].*//')
+          fi
+          if [ -z "$PROJ_VERSION" ]; then
+            PROJ_VERSION=$(basename "$WHEEL" | sed 's/^[^-]*-//' | cut -d'-' -f1)
+          fi
+          echo "PYAPP_PROJECT_NAME=${PROJ_NAME}" >> $GITHUB_ENV
+          echo "PYAPP_PROJECT_VERSION=${PROJ_VERSION}" >> $GITHUB_ENV
           echo "PYAPP_EXEC_ENTRYPOINT=${EXEC_ENTRYPOINT}" >> $GITHUB_ENV
           echo "PYAPP_DISTRIBUTION_EMBED=1" >> $GITHUB_ENV
           echo "PYAPP_PYTHON_VERSION=${PY_VER}" >> $GITHUB_ENV
