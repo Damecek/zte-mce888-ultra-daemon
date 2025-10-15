@@ -199,6 +199,34 @@ class ZTEClient:
         expects: str,
         retry_on_auth: bool,
     ) -> Any:
+        """
+        Perform an authenticated HTTP request against the modem API and return
+        the parsed response.
+
+        Parameters:
+            path (str): Request path relative to the client's base URL.
+            method (str | None): Explicit HTTP method (e.g., "GET", "POST").
+                If None, selects POST when payload is provided, otherwise GET.
+            payload (Any | None): Request payload. If a dict/list and method is
+                not GET, it is sent as JSON; for GET, dict payload is used as
+                query parameters; other payload types are sent as raw content.
+            expects (str): Expected response format; use "json" to parse and
+                return JSON, any other value returns raw text.
+            retry_on_auth (bool): If True, attempt a single re-login using the
+                cached plaintext password on 401/403 and retry the request.
+
+        Returns:
+            Any: Parsed JSON when expects == "json", otherwise response text.
+
+        Raises:
+            AuthenticationError: If no valid session exists before the request
+                or authentication is required/expired and cannot be retried.
+            TimeoutError: On request timeout.
+            RequestError: For non-success HTTP status codes or lower-level HTTP
+                failures.
+            ResponseParseError: When expects == "json" but the response body
+                cannot be decoded as JSON.
+        """
         if not self._session.authenticated or not self._session.cookie:
             raise AuthenticationError("Login required before making requests")
 
@@ -209,7 +237,7 @@ class ZTEClient:
         if resolved_method.upper() == "GET" and payload is not None:
             request_kwargs["params"] = payload if isinstance(payload, dict) else payload
         elif payload is not None:
-            if isinstance(payload, (dict, list)):
+            if isinstance(payload, dict | list):
                 request_kwargs["json"] = payload
             else:
                 request_kwargs["content"] = payload
@@ -239,12 +267,34 @@ class ZTEClient:
         if not response.is_success:
             raise RequestError(f"Unexpected status code: {response.status_code}")
 
+        # Emit REST response details at debug level to aid troubleshooting
+        try:
+            preview_text = response.text
+        except Exception:  # pragma: no cover - defensive
+            preview_text = "<unavailable>"
+        # Include status and a short body preview directly in the message so
+        # it shows with default logging formatters.
+        preview = preview_text[:500] if isinstance(preview_text, str) else "<unavailable>"
+        body_len = len(preview_text) if isinstance(preview_text, str) else "n/a"
+        msg = f"REST response received status={response.status_code} body_len={body_len}"
+        # Log preview separately to keep line length within limits
+        self._logger.debug(msg)
+        self._logger.debug(f"REST response preview={preview!r}")
+
         if expects == "json":
             try:
-                return response.json()
+                parsed = response.json()
             except json.JSONDecodeError as exc:
                 raise ResponseParseError("Failed to decode JSON response") from exc
-        return response.text
+            # Also log JSON keys for quick visibility
+            if isinstance(parsed, dict):
+                try:
+                    keys_preview = ", ".join(list(sorted(parsed.keys()))[:50])
+                    self._logger.debug(f"Parsed JSON payload keys=[{keys_preview}]")
+                except Exception:  # pragma: no cover - defensive
+                    pass
+            return parsed
+        return preview_text
 
     def __enter__(self) -> ZTEClient:  # pragma: no cover - convenience
         return self

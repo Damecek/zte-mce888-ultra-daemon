@@ -8,15 +8,38 @@ from typing import Any
 
 
 def _format_payload(payload: Any) -> str:
+    """
+    Format a payload for inclusion in discovery artifacts.
+
+    Parameters:
+        payload (Any): The value to format. If `payload` is None, it is
+            represented as the literal string "null". If `payload` is a dict
+            or list, it is serialized as pretty-printed JSON (2-space indent,
+            keys sorted). Otherwise the value's `str()` is returned.
+
+    Returns:
+        str: The formatted string representation of `payload`.
+    """
     if payload is None:
         return "null"
-    if isinstance(payload, (dict, list)):
+    if isinstance(payload, dict | list):
         return json.dumps(payload, indent=2, sort_keys=True)
     return str(payload)
 
 
 def _format_response(response: Any) -> str:
-    if isinstance(response, (dict, list)):
+    """
+    Format a response value for inclusion in discovery Markdown.
+
+    Parameters:
+        response (Any): The value to format; typically a dict, list, or other
+            serializable value.
+
+    Returns:
+        str: Pretty-printed JSON (2-space indent, keys sorted) if `response`
+            is a dict or list, otherwise `str(response)`.
+    """
+    if isinstance(response, dict | list):
         return json.dumps(response, indent=2, sort_keys=True)
     return str(response)
 

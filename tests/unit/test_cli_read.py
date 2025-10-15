@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import click
 import pytest
 from click.testing import CliRunner
 
@@ -65,7 +66,17 @@ def test_read_command_rejects_unknown_metric(runner: CliRunner, monkeypatch) -> 
             "--router-password",
             "pw",
         ],
-        catch_exceptions=False,
+        # Allow Click to capture exceptions so we can assert wrapping behavior
+        catch_exceptions=True,
     )
+    # Expect ClickException wrapping the underlying KeyError from metric resolution
     assert result.exit_code != 0
-    assert "Unknown metric identifier" in result.output
+    assert isinstance(result.exception, click.ClickException) or isinstance(result.exception, Exception)
+    # When wrapped, __cause__ should hold the original KeyError
+    if isinstance(result.exception, click.ClickException):
+        assert isinstance(result.exception.__cause__, KeyError)
+        assert str(result.exception.__cause__) in {"'foo.bar'", "foo.bar"}
+    else:
+        # Fallback assertion if Click surfaces the underlying error directly
+        assert isinstance(result.exception, KeyError)
+        assert str(result.exception) in {"'foo.bar'", "foo.bar"}

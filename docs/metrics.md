@@ -1,12 +1,31 @@
 # ZTE MC888 Ultra Metrics Catalog
 
-This catalog defines stable metric identifiers used by the `zte read` command.
+This catalog defines stable metric identifiers used by the `zte read` command,
+and how they map to MQTT request/response topics when running `zte run`.
 
 Identifiers follow a dot-path convention with optional array indices:
 
 - Format: `<namespace>.<field>` with optional `[index]` for lists.
 - Examples: `lte.rsrp1`, `nr5g.pci`, `wan_ip`, `temp.a`, `neighbors`, `neighbors[0].id`.
 - Identifiers are case-insensitive.
+
+
+## MQTT Topics and Grouping
+
+All MQTT requests and responses are nested under a single logical `zte` group.
+
+- Root prefix: optional. Provided via `--mqtt-topic` on `zte run`.
+- Effective prefix used by the daemon: `<root>/zte` (if no `--mqtt-topic`, just `zte`).
+- Request pattern: `<effective-prefix>/<metric>/get` for single metrics.
+- Aggregate requests:
+  - `<effective-prefix>/lte/get` returns an object with LTE-only metrics.
+  - `<effective-prefix>/get` (no metric segment) returns a nested object with all data grouped by logical area (`lte`, `nr5g`, `temp`, and top-level info like `provider`, `connection`, etc.).
+
+Examples (no custom root):
+
+- Request topic `zte/lte/rsrp1/get` → Response topic `zte/lte/rsrp1` with a number.
+- Request topic `zte/lte/get` → Response topic `zte/lte` with an object of LTE metrics.
+- Request topic `zte/get` → Response topic `zte` with a nested object of all metrics.
 
 
 ## LTE Metrics

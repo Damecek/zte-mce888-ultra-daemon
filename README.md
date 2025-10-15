@@ -47,7 +47,7 @@ uv run zte discover \
 ```
 
 Notes:
-- `run` reads the latest modem snapshot from `tests/fixtures/modem/latest.json` and writes a mock publish into `logs/mqtt-mock.jsonl`.
+- `run` starts an MQTT-driven daemon loop that authenticates to the router and processes request topics via a dispatcher. For fully offline workflows, you can use the mock components: `MockModemClient` reads `tests/fixtures/modem/latest.json` and `MockMQTTBroker` records publishes to `logs/mqtt-mock.jsonl`.
 - `read` supports identifiers like `lte.rsrp1`, `nr5g.pci`, `wan_ip`, `provider`, and a `neighbors[...]` selector when using live REST.
 - `discover` logs in to the modem, performs the request, and when `--target-file` is set it also writes a JSON snapshot alongside the Markdown example.
 
