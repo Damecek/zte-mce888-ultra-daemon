@@ -1,6 +1,6 @@
 # ZTE MC888 Ultra Daemon
 
-Developer-focused CLI for the ZTE MC888 Ultra. It ships a Click-based `zte` CLI with `run`, `read`, and `discover` commands, structured logging, in-memory snapshots with on-disk fixtures, and a mock MQTT broker for offline development.
+Developer-focused CLI for the ZTE MC888 Ultra. It ships a Click-based `zte` CLI with `run`, `read`, and `discover` commands, structured logging, and helpers for capturing discovery snapshots. Mock modem/MQTT components live under `services/` for tests and manual experiments; they are not wired into the CLI.
 
 ## Requirements
 - Python 3.12 (recommended to manage with `uv`)
@@ -10,7 +10,7 @@ Bootstrap with uv:
 
 ```bash
 uv python install 3.12
-uv sync
+uv sync --extra dev
 ```
 
 ## CLI Usage
@@ -20,14 +20,15 @@ See `docs/cli.md` for full command help. Quick examples:
 # Show help
 uv run zte --help
 
-# Run mocked daemon once and record an MQTT payload
+# Run the daemon with a custom MQTT broker and topic prefix
 uv run zte run \
   --router-host 192.168.0.1 \
   --router-password secret \
   --foreground \
   --log warn \
   --log-file ./logs/zte.log \
-  --mqtt-host 192.168.0.50:8080 \
+  --mqtt-host 192.168.0.50 \
+  --mqtt-port 8080 \
   --mqtt-topic zte-modem
 
 # Read a metric from the router via REST
@@ -47,7 +48,7 @@ uv run zte discover \
 ```
 
 Notes:
-- `run` starts an MQTT-driven daemon loop that authenticates to the router and processes request topics via a dispatcher. For fully offline workflows, you can use the mock components: `MockModemClient` reads `tests/fixtures/modem/latest.json` and `MockMQTTBroker` records publishes to `logs/mqtt-mock.jsonl`.
+- `run` starts an MQTT-driven daemon loop that authenticates to the router and processes request topics via a dispatcher. It stays connected until interrupted and publishes responses under `<root>/...` based on the configured MQTT topic prefix.
 - `read` supports identifiers like `lte.rsrp1`, `nr5g.pci`, `wan_ip`, `provider`, `connected_devices`, and a `neighbors[...]` selector when using live REST.
 - `discover` logs in to the modem, performs the request, and when `--target-file` is set it also writes a JSON snapshot alongside the Markdown example.
 
