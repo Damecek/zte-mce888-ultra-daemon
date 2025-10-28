@@ -19,7 +19,7 @@ All MQTT requests and responses are nested under a single logical `zte` group.
 - Request pattern: `<effective-prefix>/<metric>/get` for single metrics.
 - Aggregate requests:
   - `<effective-prefix>/lte/get` returns an object with LTE-only metrics.
-  - `<effective-prefix>/get` (no metric segment) returns a nested object with all data grouped by logical area (`lte`, `nr5g`, `temp`, and top-level info like `provider`, `connection`, etc.).
+  - `<effective-prefix>/get` (no metric segment) returns a nested object with all data grouped by logical area (`lte`, `nr5g`, `temp`, `neighbors`, `connected_devices`, and top-level info like `provider`, `connection`, etc.).
 
 Examples (no custom root):
 
@@ -67,6 +67,18 @@ parsed from entries shaped like `freq,pci,rsrq,rsrp,rssi`.
 - `zte read "neighbors"` returns a JSON array of neighbor objects.
 - `zte read "neighbors[0]"` returns a JSON object for the first neighbor.
 - `zte read "neighbors[0].id"` returns a scalar field from the first neighbor.
+
+## Connected Devices
+- `connected_devices[]` – LAN clients currently visible to the modem.
+- `connected_devices[].hostname` – Hostname reported for the device (may be `null` or empty).
+- `connected_devices[].ip` – IPv4 address assigned to the device.
+- `connected_devices[].mac` – MAC address of the device.
+- `connected_devices[].connect_time` – Connection uptime in seconds (integer when provided).
+- `connected_devices[].mac_bind_flag` – MAC binding flag (string/integer as provided by the modem UI).
+
+The underlying modem payload is fetched from `cmd=lan_station_list`. Retrieve it
+directly with `zte read connected_devices` or request it via MQTT topic
+`zte/connected_devices/get`.
 
 ## Connection State
 - `connection` – Aggregated connection mode (e.g., `ENDC`).

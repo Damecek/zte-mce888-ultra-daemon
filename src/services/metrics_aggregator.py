@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from lib.value_coerce import coerce_number_like as _coerce
+from services.connected_devices import parse_connected_devices
 from services.neighbor_cells import parse_neighbors
+from services.zte_paths import connected_devices_path
 
 if TYPE_CHECKING:  # pragma: no cover - typing helper
     from services.zte_client import ZTEClient
@@ -296,6 +298,7 @@ class MetricsAggregator:
             "nr5g": self._collect_group(payload, "nr5g"),
             "temp": self._collect_group(payload, "temp"),
             "neighbors": self._collect_neighbors(payload),
+            "connected_devices": self.collect_connected_devices(),
         }
 
         return out
@@ -321,6 +324,11 @@ class MetricsAggregator:
         raw_key = _METRICS.payload_for("neighbors.raw")
         raw_value = payload.get(raw_key)
         return parse_neighbors(raw_value)
+
+    def collect_connected_devices(self) -> list[dict[str, Any]]:
+        response = self._client.request(connected_devices_path(), method="GET", expects="json")
+        devices_payload = response.get("lan_station_list") if isinstance(response, dict) else None
+        return parse_connected_devices(devices_payload)
 
     def _load_payload(self) -> dict[str, Any]:
         """

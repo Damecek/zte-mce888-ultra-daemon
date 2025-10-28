@@ -40,6 +40,7 @@ class StubAggregator:
             "lte": {"rsrp1": -90},
             "nr5g": {"pci": 123},
             "temp": {"a": 40},
+            "connected_devices": [],
         }
 
 

@@ -25,6 +25,22 @@ def test_collect_all_builds_nested_groups_and_coerces_types() -> None:
         "wan_active_band": "B20 + n28",
         "wan_ipaddr": "10.0.0.2",
         "ngbr_cell_info": "6400,389,-11,-102,-73;6400,354,-10,-104,-81",
+        "lan_station_list": [
+            {
+                "connect_time": "1727695",
+                "hostname": " ControlUnit ",
+                "ip_addr": "192.0.2.10 ",
+                "mac_addr": " 02:00:00:00:00:10",
+                "mac_bind_flag": "2",
+            },
+            {
+                "connect_time": None,
+                "hostname": None,
+                "ip_addr": "",
+                "mac_addr": "",
+                "mac_bind_flag": "",
+            },
+        ],
         # LTE group
         "lte_rsrp_1": "-90",
         "lte_snr_1": "12.5",
@@ -80,6 +96,22 @@ def test_collect_all_builds_nested_groups_and_coerces_types() -> None:
         {"freq": 6400, "id": 389, "rsrp": -102, "rsrq": -11, "rssi": -73},
         {"freq": 6400, "id": 354, "rsrp": -104, "rsrq": -10, "rssi": -81},
     ]
+    assert out["connected_devices"] == [
+        {
+            "hostname": "ControlUnit",
+            "ip": "192.0.2.10",
+            "mac": "02:00:00:00:00:10",
+            "connect_time": 1727695,
+            "mac_bind_flag": 2,
+        },
+        {
+            "hostname": None,
+            "ip": "",
+            "mac": "",
+            "connect_time": None,
+            "mac_bind_flag": "",
+        },
+    ]
 
 
 def test_collect_all_handles_missing_values() -> None:
@@ -106,6 +138,7 @@ def test_collect_all_handles_missing_values() -> None:
     assert out["nr5g"] == {}
     assert out["temp"] == {}
     assert out["neighbors"] == []
+    assert out["connected_devices"] == []
 
 
 def test_collect_nr5g_and_temp_groups() -> None:

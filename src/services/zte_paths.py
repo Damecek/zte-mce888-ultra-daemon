@@ -10,6 +10,7 @@ def build_get_multi_cmd_path(cmds: str) -> str:
 
 
 NEIGHBORS_CMD = "ngbr_cell_info"
+LAN_STATION_LIST_CMD = "lan_station_list"
 
 
 def neighbors_path() -> str:
@@ -17,10 +18,17 @@ def neighbors_path() -> str:
     return build_get_multi_cmd_path(NEIGHBORS_CMD)
 
 
+def connected_devices_path() -> str:
+    """Return the GET path used to fetch connected LAN devices."""
+    return f"{GOFORM_GET}?isTest=false&cmd={LAN_STATION_LIST_CMD}"
+
+
 __all__ = [
     "GOFORM_GET",
     "GOFORM_SET",
     "NEIGHBORS_CMD",
+    "LAN_STATION_LIST_CMD",
     "build_get_multi_cmd_path",
     "neighbors_path",
+    "connected_devices_path",
 ]

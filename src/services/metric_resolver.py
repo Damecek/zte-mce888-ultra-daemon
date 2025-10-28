@@ -74,6 +74,8 @@ def fetch_metric_snapshot(
             return aggregator.collect_temp()
         if ident_norm == "zte":
             return aggregator.collect_all()
+        if ident_norm == "connected_devices":
+            return aggregator.collect_connected_devices()
         return aggregator.fetch(ident_norm)
     finally:
         # Ensure connections are torn down promptly; the helper always uses a
