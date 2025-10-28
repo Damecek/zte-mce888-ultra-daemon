@@ -32,4 +32,5 @@ Python 3.12 (uv-managed "python stable"): Follow standard conventions
 Recommended workflow:
 1. `uv sync --extra dev` (install tooling extras)
 2. `uv run pytest --cov src` (full suite with coverage)
+3. `uvx ruff check . --fix` (run Ruff and resolve all findings)
 <!-- MANUAL ADDITIONS END -->

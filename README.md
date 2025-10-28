@@ -68,6 +68,8 @@ uv run pytest tests/unit/test_cli_read.py::test_read_command_returns_metric_valu
 ## Linting and Formatting
 Ruff handles linting, import sorting, and formatting. The project targets Python 3.12 and uses a max line length of 120.
 
+Always run Ruff during your workflow and fix any reported issues before considering a task complete.
+
 Without installing anything locally:
 
 ```bash
