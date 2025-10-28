@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import signal
+from typing import Any
 
 import click
 
@@ -11,9 +13,54 @@ from models.daemon_state import DaemonState
 from models.mqtt_config import MQTTConfig
 from models.router_config import RouterConfig
 from pipeline.dispatcher import Dispatcher
-from services import zte_client
-from services.metrics_aggregator import MetricsAggregator
+from services.metric_resolver import fetch_metric_snapshot
 from services.mqtt_client import MQTTClient
+
+
+class LiveMetricProvider:
+    """
+    Implements the MetricReader and Aggregator protocols expected by the dispatcher.
+
+    All lookups are delegated to ``fetch_metric_snapshot`` so the daemon follows
+    the exact same flow as the ``read`` CLI command: construct a fresh client,
+    authenticate, gather metrics, and tear down the connection per request.
+    """
+
+    def __init__(self, router_config: RouterConfig, logger: logging.Logger | None = None) -> None:
+        self._router_config = router_config
+        self._logger = logger
+
+    def fetch(self, metric: str) -> Any:
+        return fetch_metric_snapshot(
+            metric,
+            router_host=self._router_config.host,
+            router_password=self._router_config.password,
+            logger=self._logger,
+        )
+
+    def collect_lte(self) -> dict[str, Any]:
+        value = self.fetch("lte")
+        if not isinstance(value, dict):
+            raise TypeError("LTE aggregate must resolve to a mapping")
+        return value
+
+    def collect_nr5g(self) -> dict[str, Any]:
+        value = self.fetch("nr5g")
+        if not isinstance(value, dict):
+            raise TypeError("NR5G aggregate must resolve to a mapping")
+        return value
+
+    def collect_temp(self) -> dict[str, Any]:
+        value = self.fetch("temp")
+        if not isinstance(value, dict):
+            raise TypeError("Temperature aggregate must resolve to a mapping")
+        return value
+
+    def collect_all(self) -> dict[str, Any]:
+        value = self.fetch("zte")
+        if not isinstance(value, dict):
+            raise TypeError("ZTE aggregate must resolve to a mapping")
+        return value
 
 
 async def _run_daemon(
@@ -74,13 +121,7 @@ async def _run_daemon(
         f"foreground={foreground}"
     )
 
-    client = zte_client.ZTEClient(router_config.host)
-    try:
-        client.login(router_config.password)
-    except zte_client.ZTEClientError as exc:
-        raise click.ClickException(f"Failed to authenticate with router: {exc}") from exc
-
-    aggregator = MetricsAggregator(client)
+    aggregator = LiveMetricProvider(router_config, logger)
     mqtt_client = MQTTClient(mqtt_config)
     dispatcher = Dispatcher(
         mqtt_config=mqtt_config,
@@ -129,7 +170,6 @@ async def _run_daemon(
                 if not stop_event.is_set():
                     await asyncio.sleep(mqtt_config.reconnect_seconds)
     finally:
-        client.close()
         logger.info(f"Daemon stopped: failures={state.failures}")
 
 

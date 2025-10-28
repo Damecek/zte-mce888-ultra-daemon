@@ -47,7 +47,7 @@ def test_run_command_help_matches_contract(runner: CliRunner) -> None:
     assert "Log level for stdout and file handlers" in output
     assert "[default: warn]" in output
     assert "--foreground" in output
-    assert "Run in foreground (default)." in output
+    assert "Run in foreground." in output
     assert "--log-file PATH" in output
     assert "Optional log file destination" in output
     assert "--mqtt-host TEXT" in output

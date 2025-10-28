@@ -71,12 +71,15 @@ def test_read_command_rejects_unknown_metric(runner: CliRunner, monkeypatch) -> 
     )
     # Expect ClickException wrapping the underlying KeyError from metric resolution
     assert result.exit_code != 0
-    assert isinstance(result.exception, click.ClickException) or isinstance(result.exception, Exception)
-    # When wrapped, __cause__ should hold the original KeyError
     if isinstance(result.exception, click.ClickException):
+        # When wrapped, __cause__ should hold the original KeyError
         assert isinstance(result.exception.__cause__, KeyError)
         assert str(result.exception.__cause__) in {"'foo.bar'", "foo.bar"}
-    else:
+    elif isinstance(result.exception, Exception):
         # Fallback assertion if Click surfaces the underlying error directly
         assert isinstance(result.exception, KeyError)
         assert str(result.exception) in {"'foo.bar'", "foo.bar"}
+    else:
+        # Click's standalone mode converts ClickExceptions into SystemExit; ensure message is propagated.
+        assert isinstance(result.exception, SystemExit)
+        assert "'foo.bar'" in result.output

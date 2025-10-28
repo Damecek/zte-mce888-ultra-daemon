@@ -16,19 +16,6 @@ def anyio_backend():
     return "asyncio"
 
 
-class FakeZTEClient:
-    def __init__(self, host: str) -> None:
-        self.host = host
-        self.logged_in_with: str | None = None
-        self.closed = False
-
-    def login(self, password: str) -> None:
-        self.logged_in_with = password
-
-    def close(self) -> None:
-        self.closed = True
-
-
 class FakeDispatcher:
     def __init__(self, **_: Any) -> None:
         self.requests: list[tuple[str, bytes | None]] = []
@@ -45,6 +32,7 @@ class FakeMQTTClient:
         self.connect_calls = 0
         self.disconnect_calls = 0
         self._disconnect_event = asyncio.Event()
+        self.publishes: list[Any] = []
 
     def set_message_handler(self, handler: Callable[[str, bytes | None], Any]) -> None:
         self._handler = handler
@@ -55,6 +43,9 @@ class FakeMQTTClient:
     async def disconnect(self) -> None:
         self.disconnect_calls += 1
         self._disconnect_event.set()
+
+    def publish(self, envelope: Any) -> None:
+        self.publishes.append(envelope)
 
     async def wait_for_disconnect(self) -> None:
         await self._disconnect_event.wait()
@@ -80,12 +71,7 @@ async def test_run_daemon_connects_handles_message_and_stops_on_sigint(monkeypat
     and then trigger SIGINT to request a graceful shutdown. All network I/O is mocked.
     """
     # Capture created fakes for assertions
-    created: dict[str, Any] = {}
-
-    # Patch ZTEClient constructor used by the run module
-    def fake_zte_client_ctor(host: str) -> FakeZTEClient:
-        created["client"] = FakeZTEClient(host)
-        return created["client"]
+    created: dict[str, Any] = {"snapshot_calls": []}
 
     # Patch MQTTClient factory to return our fake and capture it
     def fake_mqtt_client_ctor(config: Any) -> FakeMQTTClient:
@@ -93,16 +79,22 @@ async def test_run_daemon_connects_handles_message_and_stops_on_sigint(monkeypat
         created["mqtt"] = fake
         return fake
 
-    # Patch Dispatcher to our fake
-    def fake_dispatcher_ctor(**kwargs: Any) -> FakeDispatcher:
-        fake = FakeDispatcher(**kwargs)
-        created["dispatcher"] = fake
-        return fake
+    # Patch metric fetcher so we can assert it's reused by the daemon handler
+    def fake_snapshot(metric: str, *, router_host: str, router_password: str, logger: Any | None = None) -> Any:
+        created["snapshot_calls"].append({
+            "metric": metric,
+            "router_host": router_host,
+            "router_password": router_password,
+        })
+        if metric == "provider":
+            return "O2"
+        if metric in {"lte", "nr5g", "temp", "zte"}:
+            return {"dummy": 1}
+        return 42
 
     # Replace imported symbols within the run module
     monkeypatch.setattr(run_module, "MQTTClient", fake_mqtt_client_ctor)
-    monkeypatch.setattr(run_module, "Dispatcher", fake_dispatcher_ctor)
-    monkeypatch.setattr(run_module.zte_client, "ZTEClient", fake_zte_client_ctor)
+    monkeypatch.setattr(run_module, "fetch_metric_snapshot", fake_snapshot)
 
     # Provide a fake loop to capture the signal handler callback
     loop = FakeLoop()
@@ -127,11 +119,6 @@ async def test_run_daemon_connects_handles_message_and_stops_on_sigint(monkeypat
     # Allow the task to run up to the wait() on stop/disconnect
     await asyncio.sleep(0)
 
-    # Assert that construction/login happened
-    assert isinstance(created.get("client"), FakeZTEClient)
-    assert created["client"].host == "http://192.168.0.1"
-    assert created["client"].logged_in_with == "pw"
-
     # Assert MQTT client was constructed with an effective root 'home/zte'
     assert isinstance(created.get("mqtt"), FakeMQTTClient)
     assert created["mqtt"].config.root_topic == "home/zte"
@@ -139,16 +126,18 @@ async def test_run_daemon_connects_handles_message_and_stops_on_sigint(monkeypat
 
     # Simulate an incoming message; should delegate to Dispatcher.handle_request
     created["mqtt"].emit("home/zte/lte/get", b"{}")
-    assert created["dispatcher"].requests == [("home/zte/lte/get", b"{}")]
+    assert created["snapshot_calls"], "fetch_metric_snapshot should be invoked for metric resolution"
+    assert created["snapshot_calls"][0]["router_host"] == "http://192.168.0.1"
+    assert created["snapshot_calls"][0]["router_password"] == "pw"
+    assert created["mqtt"].publishes, "Dispatcher should publish resolved metric"
 
     # Invoke the registered SIGINT handler to request stop
     assert signal.SIGINT in loop.handlers
     loop.handlers[signal.SIGINT]()  # sets the stop_event
 
-    # Await completion and ensure disconnect happened and client was closed
+    # Await completion and ensure disconnect happened
     await asyncio.wait_for(task, timeout=1.0)
     assert created["mqtt"].disconnect_calls >= 1
-    assert created["client"].closed is True
 
 
 @pytest.mark.anyio
@@ -157,10 +146,6 @@ async def test_run_daemon_registers_both_signals_and_stops_on_sigterm(monkeypatc
     Ensure both SIGINT and SIGTERM are registered and triggering SIGTERM also causes a graceful exit.
     """
     created: dict[str, Any] = {}
-
-    def fake_zte_client_ctor(host: str) -> FakeZTEClient:
-        created["client"] = FakeZTEClient(host)
-        return created["client"]
 
     def fake_mqtt_client_ctor(config: Any) -> FakeMQTTClient:
         fake = FakeMQTTClient(config)
@@ -174,7 +159,6 @@ async def test_run_daemon_registers_both_signals_and_stops_on_sigterm(monkeypatc
 
     monkeypatch.setattr(run_module, "MQTTClient", fake_mqtt_client_ctor)
     monkeypatch.setattr(run_module, "Dispatcher", fake_dispatcher_ctor)
-    monkeypatch.setattr(run_module.zte_client, "ZTEClient", fake_zte_client_ctor)
 
     loop = FakeLoop()
     monkeypatch.setattr(asyncio, "get_running_loop", lambda: loop)
@@ -204,6 +188,5 @@ async def test_run_daemon_registers_both_signals_and_stops_on_sigterm(monkeypatc
     loop.handlers[signal.SIGTERM]()
     await asyncio.wait_for(task, timeout=1.0)
 
-    # Asserts: MQTT disconnect and client close performed
+    # Asserts: MQTT disconnect performed
     assert created["mqtt"].disconnect_calls >= 1
-    assert created["client"].closed is True

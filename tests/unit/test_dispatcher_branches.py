@@ -6,6 +6,7 @@ from typing import Any
 from models.mqtt_config import MQTTConfig
 from pipeline.dispatcher import Dispatcher
 from services import zte_client
+from services.metric_resolver import MetricLookupError
 
 
 @dataclass
@@ -58,6 +59,15 @@ class MetricReaderClientError:
     def fetch(self, metric: str) -> Any:
         self.calls.append(metric)
         raise zte_client.ZTEClientError("router unhappy")
+
+
+class MetricReaderSelectorError:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def fetch(self, metric: str) -> Any:
+        self.calls.append(metric)
+        raise MetricLookupError("bad selector")
 
 
 class AggregatorEmpty:
@@ -145,6 +155,15 @@ def test_single_keyerror_records_failure() -> None:
 
     assert state.failures == 1
     assert state.requests == 1  # request counted before fetch
+    assert not mqtt.publishes
+
+
+def test_single_selector_error_records_failure() -> None:
+    dispatcher, state, mqtt = _make_dispatcher(reader=MetricReaderSelectorError(), aggregator=AggregatorEmpty())
+    dispatcher.handle_request("zte/neighbors[0]/get")
+
+    assert state.failures == 1
+    assert state.requests == 1
     assert not mqtt.publishes
 
 

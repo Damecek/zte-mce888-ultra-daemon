@@ -16,7 +16,8 @@ tests/
 
 ## Commands
 - uv run zte --help
-- uv run pytest
+- uv sync --extra dev
+- uv run pytest --cov src
 - ruff check .
 - uvx ruff check .
 
@@ -28,6 +29,7 @@ Python 3.12 (uv-managed "python stable"): Follow standard conventions
 - 002-we-have-boilerplate: Added Python 3.12 (uv-managed)
 
 <!-- MANUAL ADDITIONS START -->
-Recommended: use `uv run pytest` directly; `pytest` is part of the main
-dependencies to simplify CI and local runs without extras.
+Recommended workflow:
+1. `uv sync --extra dev` (install tooling extras)
+2. `uv run pytest --cov src` (full suite with coverage)
 <!-- MANUAL ADDITIONS END -->

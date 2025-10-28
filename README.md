@@ -52,26 +52,17 @@ Notes:
 - `discover` logs in to the modem, performs the request, and when `--target-file` is set it also writes a JSON snapshot alongside the Markdown example.
 
 ## Tests
-Run tests without installing pytest into the environment by using uv to resolve it on-demand:
+Install development extras once, then run the suite with coverage:
 
 ```bash
-uv run --with pytest pytest
+uv sync --extra dev
+uv run pytest --cov src
 ```
 
-Alternatively, use dev extras:
+For focused runs:
 
 ```bash
-# one-off (resolve extras just for this run)
-uv run --with .[dev] pytest
-
-# or install dev extras, then run normally
-uv sync --extra dev
-uv run pytest
-
-### Coverage
-Collect coverage locally (requires `pytest-cov`):
-
-uv run --with pytest-cov pytest --cov=src --cov-report=term-missing
+uv run pytest tests/unit/test_cli_read.py::test_read_command_returns_metric_value
 ```
 
 ## Linting and Formatting

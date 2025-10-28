@@ -9,6 +9,7 @@ from models.metric_request import MetricRequest
 from models.mqtt_config import MQTTConfig
 from models.publish_envelope import PublishEnvelope
 from services import zte_client
+from services.metric_resolver import MetricLookupError
 
 
 class MetricReader(Protocol):
@@ -156,6 +157,12 @@ class Dispatcher:
                     return
         except KeyError:
             self._logger.warning(f"Requested metric unavailable: metric={request.metric}")
+            self.state.record_failure()
+            return
+        except MetricLookupError as exc:
+            self._logger.warning(
+                f"Requested metric selector invalid; skipping publish: metric={request.metric} error={exc}"
+            )
             self.state.record_failure()
             return
         except zte_client.ZTEClientError as exc:
