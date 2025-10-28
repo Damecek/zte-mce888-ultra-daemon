@@ -1,68 +1,205 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from lib.value_coerce import coerce_number_like as _coerce
+from services.neighbor_cells import parse_neighbors
 
 if TYPE_CHECKING:  # pragma: no cover - typing helper
     from services.zte_client import ZTEClient
 
-# Mapping between daemon metric identifiers and modem JSON payload keys.
-_METRIC_KEY_MAP: dict[str, str] = {
-    # LTE signal metrics
-    "lte.rsrp1": "lte_rsrp_1",
-    "lte.rsrp2": "lte_rsrp_2",
-    "lte.rsrp3": "lte_rsrp_3",
-    "lte.rsrp4": "lte_rsrp_4",
-    "lte.sinr1": "lte_snr_1",
-    "lte.sinr2": "lte_snr_2",
-    "lte.sinr3": "lte_snr_3",
-    "lte.sinr4": "lte_snr_4",
-    "lte.rsrq": "lte_rsrq",
-    "lte.rssi": "lte_rssi",
-    "lte.earfcn": "lte_ca_pcell_freq",
-    "lte.pci": "lte_pci",
-    "lte.bw": "lte_ca_pcell_bandwidth",
-    # Provider / top level
-    "provider": "network_provider_fullname",
-    "cell": "cell_id",
-    "connection": "network_type",
-    "bands": "wan_active_band",
-    "wan_ip": "wan_ipaddr",
-    # NR/5G metrics
-    "nr5g.rsrp1": "5g_rx0_rsrp",
-    "nr5g.rsrp2": "5g_rx1_rsrp",
-    "nr5g.sinr": "Z5g_SINR",
-    "nr5g.pci": "nr5g_pci",
-    "nr5g.arfcn": "nr5g_action_channel",
-    # Temperature sensors
-    "temp.a": "pm_sensor_ambient",
-    "temp.m": "pm_sensor_mdm",
-    "temp.p": "pm_sensor_pa1",
+
+@dataclass(frozen=True)
+class MetricLeaf:
+    """Leaf describing a single modem payload key with optional identifier aliases."""
+
+    payload: str
+    aliases: tuple[str, ...] = ()
+
+
+MetricTree = dict[str, "MetricTree | MetricLeaf"]
+
+
+class MetricRegistry:
+    """Builds a canonical index of metric identifiers and their payload keys."""
+
+    def __init__(self, tree: MetricTree) -> None:
+        self._leaves: dict[str, MetricLeaf] = {}
+        self._aliases: dict[str, str] = {}
+        self._leaf_children: dict[str, dict[str, str]] = {}
+        self._build(tree)
+
+    def _build(self, tree: MetricTree, prefix: tuple[str, ...] = ()) -> None:
+        parent = ".".join(prefix).lower()
+        self._leaf_children.setdefault(parent, {})
+        for key, node in tree.items():
+            path = (*prefix, key)
+            canonical = ".".join(path).lower()
+            if isinstance(node, MetricLeaf):
+                if canonical in self._leaves:
+                    raise ValueError(f"Duplicate metric definition for '{canonical}'")
+                self._leaves[canonical] = node
+                self._leaf_children[parent][key] = canonical
+                for alias in node.aliases:
+                    alias_key = alias.lower()
+                    existing = self._aliases.get(alias_key)
+                    if existing and existing != canonical:
+                        raise ValueError(f"Alias '{alias}' reused for '{canonical}' and '{existing}'")
+                    self._aliases[alias_key] = canonical
+            else:
+                self._build(node, path)
+
+    def payload_for(self, metric: str) -> str:
+        """Return the modem payload key for the given metric identifier or alias."""
+
+        canonical = self.resolve(metric)
+        return self._leaves[canonical].payload
+
+    def resolve(self, metric: str) -> str:
+        """Map a metric identifier or alias to its canonical (lowercase) path."""
+
+        ident = metric.lower()
+        if ident in self._leaves:
+            return ident
+        alias = self._aliases.get(ident)
+        if alias:
+            return alias
+        raise KeyError(metric)
+
+    def direct_children(self, group: str) -> dict[str, str]:
+        """Return immediate leaf children for a metric group."""
+
+        ident = group.lower()
+        children = self._leaf_children.get(ident)
+        if not children:
+            return {}
+        # Filter child entries to those that are leaves (may include nested nodes)
+        return {key: canonical for key, canonical in children.items() if canonical in self._leaves}
+
+    def payload_keys(self) -> Iterable[str]:
+        return (leaf.payload for leaf in self._leaves.values())
+
+
+_METRIC_TREE: MetricTree = {
+    "provider": MetricLeaf("network_provider_fullname", aliases=("provider.fullname",)),
+    "cell": MetricLeaf("cell_id"),
+    "connection": MetricLeaf("network_type"),
+    "wan": {
+        "active": {
+            "band": MetricLeaf(
+                "wan_active_band",
+                aliases=("bands", "wan_active_band", "wan.active.band"),
+            ),
+            "channel": MetricLeaf("wan_active_channel", aliases=("wan_active_channel",)),
+        },
+        "apn": MetricLeaf("wan_apn", aliases=("wan_apn",)),
+        "ip": MetricLeaf("wan_ipaddr", aliases=("wan_ip", "wan.ipaddr")),
+        "lte_ca": MetricLeaf("wan_lte_ca", aliases=("wan_lte_ca",)),
+    },
+    "bandwidth": MetricLeaf("bandwidth"),
+    "dns": {
+        "mode": MetricLeaf("dns_mode", aliases=("dns_mode",)),
+        "prefer_manual": MetricLeaf("prefer_dns_manual", aliases=("prefer_dns_manual",)),
+        "standby_manual": MetricLeaf("standby_dns_manual", aliases=("standby_dns_manual",)),
+    },
+    "ip_passthrough": MetricLeaf("ip_passthrough_enabled", aliases=("ip_passthrough_enabled",)),
+    "rmcc": MetricLeaf("rmcc"),
+    "rmnc": MetricLeaf("rmnc"),
+    "tx_power": MetricLeaf("tx_power"),
+    "neighbors": {
+        "raw": MetricLeaf("ngbr_cell_info", aliases=("ngbr_cell_info",)),
+    },
+    "lte": {
+        "band": MetricLeaf("lte_band", aliases=("lte_band",)),
+        "rsrp": MetricLeaf("lte_rsrp", aliases=("lte_rsrp",)),
+        "rsrp1": MetricLeaf("lte_rsrp_1"),
+        "rsrp2": MetricLeaf("lte_rsrp_2"),
+        "rsrp3": MetricLeaf("lte_rsrp_3"),
+        "rsrp4": MetricLeaf("lte_rsrp_4"),
+        "sinr": MetricLeaf("lte_snr", aliases=("lte_snr",)),
+        "sinr1": MetricLeaf("lte_snr_1"),
+        "sinr2": MetricLeaf("lte_snr_2"),
+        "sinr3": MetricLeaf("lte_snr_3"),
+        "sinr4": MetricLeaf("lte_snr_4"),
+        "rsrq": MetricLeaf("lte_rsrq"),
+        "rssi": MetricLeaf("lte_rssi"),
+        "earfcn": MetricLeaf("lte_ca_pcell_freq", aliases=("lte.ca.pcell.freq", "lte_ca_pcell_freq")),
+        "pci": MetricLeaf("lte_pci"),
+        "pci_lock": MetricLeaf("lte_pci_lock", aliases=("lte_pci_lock",)),
+        "earfcn_lock": MetricLeaf("lte_earfcn_lock", aliases=("lte_earfcn_lock",)),
+        "bw": MetricLeaf(
+            "lte_ca_pcell_bandwidth",
+            aliases=("lte.ca.pcell.bandwidth", "lte_ca_pcell_bandwidth"),
+        ),
+        "ca": {
+            "pcell": {
+                "band": MetricLeaf("lte_ca_pcell_band"),
+                "freq": MetricLeaf("lte_ca_pcell_freq"),
+                "bandwidth": MetricLeaf("lte_ca_pcell_bandwidth"),
+            },
+            "scell": {
+                "band": MetricLeaf("lte_ca_scell_band"),
+                "bandwidth": MetricLeaf("lte_ca_scell_bandwidth"),
+                "info": MetricLeaf("lte_multi_ca_scell_info"),
+                "signal_info": MetricLeaf("lte_multi_ca_scell_sig_info"),
+            },
+        },
+    },
+    "nr5g": {
+        "rsrp": MetricLeaf("Z5g_rsrp"),
+        "rsrq": MetricLeaf("Z5g_rsrq"),
+        "rsrp1": MetricLeaf("5g_rx0_rsrp"),
+        "rsrp2": MetricLeaf("5g_rx1_rsrp"),
+        "sinr": MetricLeaf("Z5g_SINR"),
+        "pci": MetricLeaf("nr5g_pci"),
+        "arfcn": MetricLeaf("nr5g_action_channel", aliases=("nr5g.action.channel",)),
+        "cell_id": MetricLeaf("nr5g_cell_id"),
+        "action": {
+            "band": MetricLeaf("nr5g_action_band"),
+            "channel": MetricLeaf("nr5g_action_channel", aliases=("nr5g.arfcn",)),
+            "nsa_band": MetricLeaf("nr5g_action_nsa_band"),
+        },
+        "lock": {
+            "nsa_band": MetricLeaf("nr5g_nsa_band_lock"),
+            "sa_band": MetricLeaf("nr5g_sa_band_lock"),
+        },
+        "ca": {
+            "pcell": {
+                "band": MetricLeaf("nr_ca_pcell_band"),
+                "freq": MetricLeaf("nr_ca_pcell_freq"),
+            },
+            "scell": {
+                "info": MetricLeaf("nr_multi_ca_scell_info"),
+            },
+        },
+    },
+    "wcdma": {
+        "rscp1": MetricLeaf("rscp_1"),
+        "rscp2": MetricLeaf("rscp_2"),
+        "rscp3": MetricLeaf("rscp_3"),
+        "rscp4": MetricLeaf("rscp_4"),
+        "ecio1": MetricLeaf("ecio_1"),
+        "ecio2": MetricLeaf("ecio_2"),
+        "ecio3": MetricLeaf("ecio_3"),
+        "ecio4": MetricLeaf("ecio_4"),
+    },
+    "temp": {
+        "a": MetricLeaf("pm_sensor_ambient"),
+        "m": MetricLeaf("pm_sensor_mdm"),
+        "p": MetricLeaf("pm_sensor_pa1"),
+        "5g": MetricLeaf("pm_sensor_5g"),
+    },
+    "wifi": {
+        "chip_temp": MetricLeaf("wifi_chip_temp"),
+    },
 }
 
-_LTE_OUTPUT_KEYS: dict[str, str] = {
-    "rsrp1": "lte.rsrp1",
-    "rsrp2": "lte.rsrp2",
-    "rsrp3": "lte.rsrp3",
-    "rsrp4": "lte.rsrp4",
-    "sinr1": "lte.sinr1",
-    "sinr2": "lte.sinr2",
-    "sinr3": "lte.sinr3",
-    "sinr4": "lte.sinr4",
-    "rsrq": "lte.rsrq",
-    "rssi": "lte.rssi",
-    "earfcn": "lte.earfcn",
-    "pci": "lte.pci",
-    "bw": "lte.bw",
-}
 
-# Combine required payload keys for query construction.
-_QUERY_FIELDS = sorted({key for key in _METRIC_KEY_MAP.values()})
-
-
-"""Numeric coercion now provided by lib.value_coerce.coerce_number_like."""
+_METRICS = MetricRegistry(_METRIC_TREE)
+_QUERY_FIELDS = sorted(set(_METRICS.payload_keys()))
 
 
 class MetricsAggregator:
@@ -94,10 +231,8 @@ class MetricsAggregator:
         Raises:
             KeyError: If the metric is not mapped to a payload key or if the payload does not contain the mapped key.
         """
-        ident = metric.lower()
-        json_key = _METRIC_KEY_MAP.get(ident)
-        if json_key is None:
-            raise KeyError(metric)
+        canonical = _METRICS.resolve(metric)
+        json_key = _METRICS.payload_for(canonical)
         payload = self._load_payload()
         value = payload.get(json_key)
         if value is None:
@@ -120,11 +255,11 @@ class MetricsAggregator:
         """
         payload = self._load_payload()
         aggregate: dict[str, Any] = {}
-        for output_key, metric_ident in _LTE_OUTPUT_KEYS.items():
-            json_key = _METRIC_KEY_MAP[metric_ident]
+        for output_key, canonical in _METRICS.direct_children("lte").items():
+            json_key = _METRICS.payload_for(canonical)
             raw = payload.get(json_key)
             if raw is None:
-                self._logger.warning(f"Missing LTE metric: metric={metric_ident}")
+                self._logger.warning(f"Missing LTE metric: metric={canonical}")
                 continue
             aggregate[output_key] = _coerce(raw)
         return aggregate
@@ -146,75 +281,46 @@ class MetricsAggregator:
         """
         payload = self._load_payload()
 
-        def v(key: str) -> Any:
-            raw = payload.get(_METRIC_KEY_MAP[key])
+        def optional(metric_ident: str) -> Any:
+            canonical = _METRICS.resolve(metric_ident)
+            raw = payload.get(_METRICS.payload_for(canonical))
             return None if raw is None else _coerce(raw)
 
         out: dict[str, Any] = {
-            "provider": v("provider"),
-            "cell": v("cell"),
-            "connection": v("connection"),
-            "bands": v("bands"),
-            "wan_ip": v("wan_ip"),
-            "lte": {},
-            "nr5g": {},
-            "temp": {},
+            "provider": optional("provider"),
+            "cell": optional("cell"),
+            "connection": optional("connection"),
+            "bands": optional("bands"),
+            "wan_ip": optional("wan_ip"),
+            "lte": self._collect_group(payload, "lte"),
+            "nr5g": self._collect_group(payload, "nr5g"),
+            "temp": self._collect_group(payload, "temp"),
+            "neighbors": self._collect_neighbors(payload),
         }
-
-        # LTE group
-        for key, ident in _LTE_OUTPUT_KEYS.items():
-            raw = payload.get(_METRIC_KEY_MAP[ident])
-            if raw is None:
-                continue
-            out["lte"][key] = _coerce(raw)
-
-        # NR5G group
-        for key, ident in (
-            ("rsrp1", "nr5g.rsrp1"),
-            ("rsrp2", "nr5g.rsrp2"),
-            ("sinr", "nr5g.sinr"),
-            ("pci", "nr5g.pci"),
-            ("arfcn", "nr5g.arfcn"),
-        ):
-            raw = payload.get(_METRIC_KEY_MAP[ident])
-            if raw is None:
-                continue
-            out["nr5g"][key] = _coerce(raw)
-
-        # Temperature group
-        for key, ident in (("a", "temp.a"), ("m", "temp.m"), ("p", "temp.p")):
-            raw = payload.get(_METRIC_KEY_MAP[ident])
-            if raw is None:
-                continue
-            out["temp"][key] = _coerce(raw)
 
         return out
 
     def collect_nr5g(self) -> dict[str, Any]:
         payload = self._load_payload()
+        return self._collect_group(payload, "nr5g")
+
+    def collect_temp(self) -> dict[str, Any]:
+        payload = self._load_payload()
+        return self._collect_group(payload, "temp")
+
+    def _collect_group(self, payload: dict[str, Any], group: str) -> dict[str, Any]:
         out: dict[str, Any] = {}
-        for key, ident in (
-            ("rsrp1", "nr5g.rsrp1"),
-            ("rsrp2", "nr5g.rsrp2"),
-            ("sinr", "nr5g.sinr"),
-            ("pci", "nr5g.pci"),
-            ("arfcn", "nr5g.arfcn"),
-        ):
-            raw = payload.get(_METRIC_KEY_MAP[ident])
+        for key, canonical in _METRICS.direct_children(group).items():
+            raw = payload.get(_METRICS.payload_for(canonical))
             if raw is None:
                 continue
             out[key] = _coerce(raw)
         return out
 
-    def collect_temp(self) -> dict[str, Any]:
-        payload = self._load_payload()
-        out: dict[str, Any] = {}
-        for key, ident in (("a", "temp.a"), ("m", "temp.m"), ("p", "temp.p")):
-            raw = payload.get(_METRIC_KEY_MAP[ident])
-            if raw is None:
-                continue
-            out[key] = _coerce(raw)
-        return out
+    def _collect_neighbors(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
+        raw_key = _METRICS.payload_for("neighbors.raw")
+        raw_value = payload.get(raw_key)
+        return parse_neighbors(raw_value)
 
     def _load_payload(self) -> dict[str, Any]:
         """

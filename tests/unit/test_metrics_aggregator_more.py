@@ -24,6 +24,7 @@ def test_collect_all_builds_nested_groups_and_coerces_types() -> None:
         "network_type": "ENDC",
         "wan_active_band": "B20 + n28",
         "wan_ipaddr": "10.0.0.2",
+        "ngbr_cell_info": "6400,389,-11,-102,-73;6400,354,-10,-104,-81",
         # LTE group
         "lte_rsrp_1": "-90",
         "lte_snr_1": "12.5",
@@ -75,6 +76,11 @@ def test_collect_all_builds_nested_groups_and_coerces_types() -> None:
     assert out["temp"]["m"] == 50.0
     assert out["temp"]["p"] == ""  # empty string preserved
 
+    assert out["neighbors"] == [
+        {"freq": 6400, "id": 389, "rsrp": -102, "rsrq": -11, "rssi": -73},
+        {"freq": 6400, "id": 354, "rsrp": -104, "rsrq": -10, "rssi": -81},
+    ]
+
 
 def test_collect_all_handles_missing_values() -> None:
     # Only a couple of fields present; others missing/None
@@ -99,6 +105,7 @@ def test_collect_all_handles_missing_values() -> None:
     # Other groups empty dicts
     assert out["nr5g"] == {}
     assert out["temp"] == {}
+    assert out["neighbors"] == []
 
 
 def test_collect_nr5g_and_temp_groups() -> None:
